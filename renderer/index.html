@@ -1319,7 +1319,7 @@
           <input type="date" id="editDueDate" value="${r.dueDate ? new Date(r.dueDate).toISOString().slice(0,10) : ""}" />
         </div>
         <div class="field"><label>Priority score</label>
-          <div class="badge" style="padding-top:9px;" title="${escapeHtml(scoreBreakdownText(r))}">${scoreOf(r).toFixed(1)} <span style="font-weight:400;">(hover for breakdown)</span></div>
+          <div class="badge" style="padding-top:9px;">${scoreOf(r).toFixed(1)}</div>
         </div>
       </div>
       <div class="field"><label>Customers (${r.customers.length})</label>
