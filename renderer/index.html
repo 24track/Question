@@ -479,8 +479,16 @@
       const score = overlap(words, stem(q.text));
       if (score > bestScore){ bestScore = score; best = { type:"question", item:q, score }; }
     }
+    // Deliberately title + description only, not topic: several requests can
+    // share a topic (e.g. several things tagged "Strata"), so a question that
+    // merely mentions the topic's own name would otherwise clear the match
+    // threshold against ALL of them off that one generic word alone, and
+    // arbitrarily "win" one — a false-positive match to a specific request
+    // that the actual wording never pointed to. Typing just a topic name on
+    // its own is already handled properly, and safely, by matchEntities()
+    // above, which lists every request under it instead of guessing one.
     for (const r of state.requests){
-      const hay = stem(r.title + " " + r.description + " " + (r.topic || ""));
+      const hay = stem(r.title + " " + r.description);
       const score = overlap(words, hay);
       if (score > bestScore){ bestScore = score; best = { type:"request", item:r, score }; }
     }
@@ -1080,14 +1088,32 @@
   // creation time — once actionedRequestId is set (see saveDraft), the button
   // is replaced by a link to what got created, so it can't be actioned twice.
   function feedBodyHtml(f){
-    if (f.kind !== "unanswered") return f.html;
-    if (f.actionedRequestId){
-      const req = state.requests.find(r => r.id === f.actionedRequestId);
-      return req
-        ? `Raised as a feature request: <span class="src" data-go-req="${req.id}">${escapeHtml(req.title)} — open it</span>`
-        : `Raised as a feature request (since deleted).`;
+    if (f.kind === "unanswered"){
+      if (f.actionedRequestId){
+        const req = state.requests.find(r => r.id === f.actionedRequestId);
+        return req
+          ? `Raised as a feature request: <span class="src" data-go-req="${req.id}">${escapeHtml(req.title)} — open it</span>`
+          : `Raised as a feature request (since deleted).`;
+      }
+      return `Nothing on file answers this yet.<br><button data-raise-from-id="${f.id}" data-text="${escapeHtml(f.text)}">Raise a feature request from this</button>`;
     }
-    return `Nothing on file answers this yet.<br><button data-raise-from-id="${f.id}" data-text="${escapeHtml(f.text)}">Raise a feature request from this</button>`;
+    // "matched-request": same live-recomputed, "was this wrong?" pattern as
+    // "unanswered" above — a match can be a false positive (see findAnswer),
+    // so this always offers a way to raise a fresh request instead, right up
+    // until that's actually been done for this entry.
+    if (f.kind === "matched-request"){
+      if (f.actionedRequestId){
+        const req = state.requests.find(r => r.id === f.actionedRequestId);
+        return req
+          ? `Not the right match — raised instead as: <span class="src" data-go-req="${req.id}">${escapeHtml(req.title)} — open it</span>`
+          : `Not the right match — raised as a new feature request (since deleted).`;
+      }
+      const r = state.requests.find(x => x.id === f.matchedRequestId);
+      if (!r) return `The request this was matched to has since been deleted.<br><button data-raise-from-id="${f.id}" data-text="${escapeHtml(f.text)}">Raise a feature request from this</button>`;
+      const statusNote = r.shipped ? `Shipped${r.quarter? " in "+r.quarter : ""}.` : `Status: ${statusLabel(r.status)}${r.quarter ? ", targeted "+r.quarter : ""}. Asked ${r.questionCount} time${r.questionCount===1?"":"s"} so far.`;
+      return `${statusNote}<span class="src" data-go-req="${r.id}">Matched to request: ${escapeHtml(r.title)} — open it</span><br><button data-raise-from-id="${f.id}" data-text="${escapeHtml(f.text)}">Not the right match? Raise a new feature request instead</button>`;
+    }
+    return f.html;
   }
 
   document.getElementById("composer").addEventListener("submit", e => {
@@ -1123,8 +1149,12 @@
     if (match && match.type === "request"){
       const r = match.item;
       r.questionCount += 1;
-      const statusNote = r.shipped ? `Shipped${r.quarter? " in "+r.quarter : ""}.` : `Status: ${statusLabel(r.status)}${r.quarter ? ", targeted "+r.quarter : ""}. Asked ${r.questionCount} time${r.questionCount===1?"":"s"} so far.`;
-      state.feed.push({ text, kind: "answered", html: `${statusNote}<span class="src" data-go-req="${r.id}">Matched to request: ${escapeHtml(r.title)} — open it</span>` });
+      // Rendered dynamically (see feedBodyHtml) rather than frozen as html at
+      // creation time — same reasoning as "unanswered" entries below: a match
+      // can be wrong, so this needs a live "not the right match?" escape
+      // hatch, and it should keep reflecting the request's current status
+      // rather than whatever it was the moment this question came in.
+      state.feed.push({ id: uid("f"), text, kind: "matched-request", questionId: q.id, matchedRequestId: r.id, actionedRequestId: null });
     } else if (match && match.type === "question"){
       const linkAttr = match.item.matchedRequestId ? ` data-go-req="${match.item.matchedRequestId}"` : "";
       state.feed.push({ text, kind: "answered", html: `${escapeHtml(match.item.answer)}<span class="src"${linkAttr}>Matched to a previously answered question${match.item.matchedRequestId ? " — open the request" : ""}</span>` });
@@ -1135,9 +1165,10 @@
   }
 
   let pendingTags = [];
-  // Set only when a draft is opened from an "unanswered" feed entry's button
-  // (see renderFeed/feedBodyHtml); cleared before every other path into the
-  // draft overlay so only that specific prompt gets marked actioned on save.
+  // Set only when a draft is opened from an "unanswered" or "matched-request"
+  // feed entry's button (see renderFeed/feedBodyHtml); cleared before every
+  // other path into the draft overlay so only that specific prompt gets
+  // marked actioned on save.
   let pendingDraftFeedItem = null;
   function openDraftFromText(text){
     const cleaned = text.replace(/^raise (a )?(new )?feature request( for)?[:]?/i, "").trim();
@@ -1199,6 +1230,18 @@
     const now = Date.now();
     const req = { id: uid("req"), title, description, customers, urgency, topic, status: "new", quarter: "Unscheduled", dueDate: null, createdAt: now, updatedAt: now, questionCount: 0, shipped: false };
     state.requests.push(req);
+    // If this draft was opened from a "not the right match?" button (see
+    // feedBodyHtml's "matched-request" case), the original question is still
+    // pointed at the wrong request, and that wrong request's count still
+    // includes it — move both across so the numbers end up exactly where
+    // they'd have landed had the match been right from the start.
+    if (pendingDraftFeedItem && pendingDraftFeedItem.matchedRequestId){
+      const wrongReq = state.requests.find(r => r.id === pendingDraftFeedItem.matchedRequestId);
+      if (wrongReq) wrongReq.questionCount = Math.max(0, wrongReq.questionCount - 1);
+      const origQ = state.questions.find(x => x.id === pendingDraftFeedItem.questionId);
+      if (origQ) origQ.matchedRequestId = req.id;
+      req.questionCount += 1;
+    }
     // If this draft was opened from an "unanswered" feed prompt, mark that
     // prompt actioned so its button turns into a link instead of staying
     // clickable — this is what stops the same prompt from spawning duplicates.
