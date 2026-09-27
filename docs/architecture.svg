@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1400" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif">
+  <style>
+    :root {
+      --paper: #F5F2EA; --ink: #24261F; --ink-soft: #6B6858; --ink-faint: #9A9686;
+      --teal: #1F6F64; --teal-soft: #E4EFEC; --ochre: #B4762A; --ochre-soft: #F3E8D8;
+      --rule-strong: #C7C1AC; --box: #FBF9F4;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --paper: #1D1E19; --ink: #EDEAE0; --ink-soft: #A8A493; --ink-faint: #736F60;
+        --teal: #4FA396; --teal-soft: #24322F; --ochre: #D69A4E; --ochre-soft: #34291A;
+        --rule-strong: #4A4B40; --box: #262720;
+      }
+    }
+    .bg { fill: var(--paper); }
+    .box { fill: var(--box); stroke: var(--rule-strong); stroke-width: 1.5; }
+    .box-accent { fill: var(--teal-soft); stroke: var(--teal); stroke-width: 1.5; }
+    .box-marker { fill: var(--ochre-soft); stroke: var(--ochre); stroke-width: 1.5; }
+    .title { fill: var(--ink); font-size: 30px; font-weight: 700; }
+    .subtitle { fill: var(--ink-soft); font-size: 15px; }
+    .h { fill: var(--ink); font-size: 18px; font-weight: 700; }
+    .h-mono { fill: var(--ink); font-size: 15px; font-weight: 700; font-family: SFMono-Regular,Menlo,Consolas,monospace; }
+    .b { fill: var(--ink-soft); font-size: 13.5px; }
+    .b-mono { fill: var(--ink-soft); font-size: 13px; font-family: SFMono-Regular,Menlo,Consolas,monospace; }
+    .tag { fill: var(--ink-faint); font-size: 12px; font-family: SFMono-Regular,Menlo,Consolas,monospace; }
+    .arrow-label { fill: var(--ink-soft); font-size: 12.5px; font-family: SFMono-Regular,Menlo,Consolas,monospace; }
+    .arrow { stroke: var(--ink-soft); stroke-width: 1.75; fill: none; marker-end: url(#arrowhead); }
+    .note { fill: var(--ochre); font-size: 13px; font-weight: 600; }
+  </style>
+
+  <rect class="bg" x="0" y="0" width="1200" height="1400"/>
+
+  <defs>
+    <marker id="arrowhead" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="currentColor" style="fill:var(--ink-soft)"/>
+    </marker>
+  </defs>
+
+  <text x="50" y="55" class="title">Question — architecture</text>
+  <text x="50" y="80" class="subtitle">Electron desktop app. Plain files are the source of truth; everything else is disposable or in-memory.</text>
+
+  <!-- Renderer process -->
+  <rect class="box-accent" x="50" y="110" width="1100" height="150" rx="10"/>
+  <text x="75" y="140" class="h">Renderer process — sandboxed</text>
+  <text x="75" y="163" class="tag">contextIsolation: true · nodeIntegration: false · sandbox: true</text>
+  <text x="75" y="192" class="h-mono">renderer/index.html</text>
+  <text x="75" y="213" class="b">Single-file HTML/CSS/JS UI, no framework, no build step. Holds all state in memory</text>
+  <text x="75" y="231" class="b">(requests, questions, views, feed) and re-renders on every change.</text>
+  <text x="770" y="213" class="b">Has no filesystem or Node access of</text>
+  <text x="770" y="231" class="b">its own — only <tspan class="b-mono">window.questionAPI</tspan>.</text>
+
+  <!-- Arrow renderer -> preload -->
+  <line x1="600" y1="260" x2="600" y2="305" class="arrow"/>
+  <text x="615" y="288" class="arrow-label">window.questionAPI.loadAll() / .syncAll(payload)</text>
+
+  <!-- preload / contextBridge -->
+  <rect class="box" x="50" y="310" width="1100" height="110" rx="10"/>
+  <text x="75" y="340" class="h">contextBridge — preload.cjs</text>
+  <text x="75" y="365" class="b-mono">exposeInMainWorld("questionAPI", &#123; loadAll, syncAll &#125;)</text>
+  <text x="75" y="390" class="note">The only two calls that ever cross from renderer to main — everything else stays out of the page's reach.</text>
+
+  <!-- Arrow preload -> main -->
+  <line x1="600" y1="420" x2="600" y2="465" class="arrow"/>
+  <text x="615" y="448" class="arrow-label">ipcRenderer.invoke("question:loadAll" / "question:syncAll")</text>
+
+  <!-- Main process -->
+  <rect class="box-accent" x="50" y="470" width="1100" height="190" rx="10"/>
+  <text x="75" y="500" class="h">Main process — main.cjs</text>
+  <text x="75" y="527" class="b">&#8226; Creates the <tspan class="b-mono">BrowserWindow</tspan> and enforces the Content-Security-Policy header</text>
+  <text x="75" y="547" class="b">&#8226; <tspan class="b-mono">ipcMain.handle("question:loadAll" / "question:syncAll")</tspan></text>
+  <text x="75" y="567" class="b">&#8226; Resolves <tspan class="b-mono">DATA_DIR</tspan> — <tspan class="tag">Documents/Question Data</tspan>, or the <tspan class="b-mono">QUESTION_DATA_DIR</tspan> env override</text>
+  <text x="75" y="587" class="b">&#8226; Resolves <tspan class="b-mono">SEEDED_MARKER</tspan> — inside Electron's own per-user app-support directory</text>
+  <text x="75" y="615" class="tag">Full Node.js access lives only here — never in the renderer.</text>
+
+  <!-- Arrow main -> backend -->
+  <line x1="600" y1="660" x2="600" y2="705" class="arrow"/>
+  <text x="615" y="688" class="arrow-label">backend.loadAll(dataDir, markerFile) / backend.syncAll(dataDir, ...)</text>
+
+  <!-- backend.cjs -->
+  <rect class="box" x="50" y="710" width="1100" height="190" rx="10"/>
+  <text x="75" y="740" class="h">backend.cjs — plain Node, no Electron APIs</text>
+  <text x="75" y="767" class="b">&#8226; Reads/writes each request and question as a Markdown file with YAML frontmatter</text>
+  <text x="75" y="787" class="b">&#8226; Rebuilds the SQLite index from those files on every save (never hand-edited, never assumed to exist)</text>
+  <text x="75" y="807" class="b">&#8226; Reads/writes <tspan class="b-mono">settings.json</tspan> (views, score weights, theme, feed panel height)</text>
+  <text x="75" y="827" class="b">&#8226; Checks / writes the seeded-marker file (<tspan class="b-mono">hasEverLaunched</tspan> / <tspan class="b-mono">markLaunched</tspan>)</text>
+  <text x="75" y="855" class="tag">Zero dependencies — a hand-rolled frontmatter reader/writer and Node's built-in node:sqlite.</text>
+
+  <!-- Arrows down to disk -->
+  <line x1="320" y1="900" x2="320" y2="945" class="arrow"/>
+  <line x1="880" y1="900" x2="880" y2="945" class="arrow"/>
+  <text x="335" y="928" class="arrow-label">reads / writes</text>
+  <text x="750" y="928" class="arrow-label">checks / writes once</text>
+
+  <!-- Disk: visible data folder -->
+  <rect class="box" x="50" y="950" width="480" height="270" rx="10"/>
+  <text x="75" y="982" class="h">Documents/Question Data/</text>
+  <text x="75" y="1004" class="tag">visible — the real source of truth</text>
+  <text x="75" y="1035" class="b-mono">feature-requests/*.md</text>
+  <text x="75" y="1058" class="b-mono">questions/*.md</text>
+  <text x="75" y="1081" class="b-mono">settings.json</text>
+  <text x="75" y="1104" class="b-mono">index.sqlite</text>
+  <text x="75" y="1128" class="b">— disposable: rebuilt from the .md files on every save;</text>
+  <text x="75" y="1147" class="b">deleting it loses nothing.</text>
+  <text x="75" y="1180" class="b">Human-readable, yours to back up, sync, or edit directly.</text>
+  <text x="75" y="1201" class="note">Deleting this whole folder is the app's only reset — see docs/DESIGN.md.</text>
+
+  <!-- Disk: hidden app-support marker -->
+  <rect class="box-marker" x="620" y="950" width="530" height="270" rx="10"/>
+  <text x="645" y="982" class="h">App-support (Electron userData)</text>
+  <text x="645" y="1004" class="tag">hidden — the one deliberate exception</text>
+  <text x="645" y="1035" class="b-mono">seeded.marker</text>
+  <text x="645" y="1063" class="b">Holds no user content — one bit only: "has this app ever</text>
+  <text x="645" y="1084" class="b">produced its example data before, on this machine?"</text>
+  <text x="645" y="1116" class="b">Lives outside Question Data on purpose, so it survives that</text>
+  <text x="645" y="1137" class="b">folder being deleted — a reset lands on a genuinely blank</text>
+  <text x="645" y="1158" class="b">app, and the example data seeds exactly once, ever.</text>
+
+  <text x="50" y="1370" class="subtitle">Full rationale for these choices: docs/DESIGN.md</text>
+</svg>

@@ -75,6 +75,8 @@ that turns out to be deliberate.
 
 ## How it's built
 
+![Architecture diagram: renderer process talks to the main process through preload.cjs's two exposed calls (loadAll/syncAll); the main process resolves the data directory and a separate seeded-data marker and hands both to backend.cjs, which reads and writes the Markdown+frontmatter files, settings.json and the disposable SQLite index under Documents/Question Data, plus the tiny marker file kept in Electron's own app-support directory.](docs/architecture.svg)
+
 - **Renderer**: a single-file HTML/CSS/JS UI (`renderer/index.html`), no
   framework, no build step.
 - **Backend**: plain Node.js (`src/backend.cjs`). Every request and question
