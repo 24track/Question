@@ -1,14 +1,12 @@
 name: Build installers
 
-# Builds mac/win/linux installers with electron-builder and attaches them to
-# a GitHub Release whenever a version tag (v1.2.3) is pushed. Also runs on
-# every push/PR to main as a build check, without publishing anything.
+# Only runs when a version tag (v1.2.3) is pushed — deliberately, not on
+# every commit to main. Building/publishing installers is something to opt
+# into when you're actually ready to hand out a release, not a check that
+# should run (and fail, and email you) on ordinary day-to-day pushes.
 on:
   push:
-    branches: [main]
     tags: ["v*.*.*"]
-  pull_request:
-    branches: [main]
 
 permissions:
   contents: write
@@ -34,14 +32,9 @@ jobs:
           node-version: "22"
 
       - name: Install dependencies
-        run: npm ci
-
-      - name: Build installer (no publish)
-        if: "!startsWith(github.ref, 'refs/tags/v')"
-        run: npx electron-builder ${{ matrix.target }}
+        run: npm install
 
       - name: Build and publish installer
-        if: startsWith(github.ref, 'refs/tags/v')
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npx electron-builder ${{ matrix.target }} --publish always
