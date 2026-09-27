@@ -173,6 +173,7 @@
     <div><span class="brand">Question</span></div>
     <div style="display:flex;align-items:center;gap:12px;">
       <div class="header-meta" id="headerMeta"></div>
+      <button class="btn btn-danger" id="clearAllDataBtn" title="Permanently delete every feature request and question — useful for clearing the example data on first run" style="font-size:11.5px;padding:4px 8px;">Clear all data</button>
       <select id="themeSelect" title="Theme" style="font-family:var(--font-body);font-size:11.5px;padding:4px 6px;border-radius:5px;border:1px solid var(--rule-strong);background:transparent;color:var(--ink-soft);">
         <option value="system">System theme</option>
         <option value="light">Light</option>
@@ -1327,6 +1328,18 @@
   const themeSelect = document.getElementById("themeSelect");
   themeSelect.value = state.theme;
   themeSelect.onchange = () => { state.theme = themeSelect.value; saveState(); applyTheme(); };
+
+  document.getElementById("clearAllDataBtn").onclick = () => {
+    const rCount = state.requests.length, qCount = state.questions.length;
+    if (rCount === 0 && qCount === 0) { alert("There's nothing to clear — no requests or questions logged yet."); return; }
+    if (!confirm(`Permanently delete all ${rCount} feature request${rCount===1?"":"s"} and ${qCount} question${qCount===1?"":"s"}? This can't be undone — useful for clearing the example data before you start using this for real.`)) return;
+    state.requests = [];
+    state.questions = [];
+    state.feed = [];
+    saveState();
+    render();
+    renderFeed();
+  };
 
   renderFeed(); renderHeaderMeta(); render();
   const origSave = saveState;
