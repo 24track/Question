@@ -31,6 +31,30 @@ here whenever a non-obvious choice gets made, or gets questioned and kept.
   learning from what's actually tagged means it works for any topic,
   built-in or user-created — at the cost of not being able to suggest a
   topic that has nothing tagged under it yet.
+- **Question-clustering's join threshold scales down for short questions.**
+  `clusterUnmatchedQuestions()` used a fixed "needs 2+ shared stemmed words
+  to join a cluster" rule, which meant a one-word unmatched question (or,
+  really, any two questions whose only shared vocabulary was ever going to
+  be one word) could never cluster with anything — not even an exact repeat
+  of itself, since a single word can never reach an overlap of 2. Fixed to
+  `min(2, thatQuestion'sWordCount)`: still needs 2 shared words once there
+  are 2+ to compare (so one coincidental shared word between unrelated
+  questions doesn't falsely cluster them), but a 1-word question only needs
+  that word to match. A question that stems to zero words (all stopwords)
+  never joins anything — there's no real content there to compare.
+- **A single unmatched question that never clusters with another, and never
+  becomes a feature request, has no dedicated view.** This is deliberate,
+  not an oversight: the current design only surfaces unmatched questions
+  once two or more of them share wording (an actual recurring theme, in
+  "Recurring themes without a tracked feature yet"). A list of every
+  one-off unmatched question would very likely turn into an
+  always-growing, never-emptied backlog — nobody acts on a single stray
+  question, so it just sits there, and a backlog nobody clears kills
+  motivation to look at it at all. If someone genuinely needs something,
+  the existing path (raise it as a feature request directly) already
+  covers that. The data isn't lost either way — every question, matched or
+  not, is already in `state.questions` on disk — so this can be revisited
+  later without any data migration if it turns out to matter in practice.
 
 ## Data & persistence
 

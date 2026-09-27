@@ -1046,7 +1046,18 @@
     const clusters = [];
     state.questions.filter(q => !q.matchedRequestId).forEach(q => {
       const words = stem(q.text);
-      const target = clusters.find(c => overlap(new Set(words), c.words) >= 2);
+      // The join threshold scales down for short questions. A fixed ">= 2"
+      // meant a one-word question (or any two questions that only ever
+      // share one stemmed word) could never cluster with anything — not
+      // even an exact repeat of itself, since a single word can never reach
+      // an overlap of 2. Requiring only min(2, words.length) still needs 2
+      // shared words once there are 2+ to work with (so one coincidental
+      // shared word between otherwise-unrelated questions doesn't cluster
+      // them), but a 1-word question only needs that word to match. Zero
+      // stemmed words (a question that's all stopwords) never joins
+      // anything — there's no real content to compare.
+      const threshold = words.length === 0 ? Infinity : Math.min(2, words.length);
+      const target = clusters.find(c => overlap(new Set(words), c.words) >= threshold);
       if (target){ target.items.push(q); target.words.push(...words); }
       else clusters.push({ words: words.slice(), items: [q] });
     });
