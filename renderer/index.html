@@ -58,6 +58,9 @@
   .tab { font-family: var(--font-body); font-size: 13px; font-weight: 500; color: var(--ink-soft); background: transparent; border: 1px solid var(--rule); border-bottom: none; padding: 8px 16px; border-radius: 6px 6px 0 0; cursor: pointer; white-space: nowrap; position: relative; top: 1px; transition: color 0.15s ease; }
   .tab:hover { color: var(--ink); }
   .tab.active { background: var(--paper-raised); color: var(--ink); border-color: var(--rule-strong); font-weight: 600; }
+  .tab.dragging { opacity: 0.45; }
+  .tab.drag-over-before { box-shadow: inset 3px 0 0 0 var(--teal); }
+  .tab.drag-over-after { box-shadow: inset -3px 0 0 0 var(--teal); }
   .tab-add { font-family: var(--font-body); font-size: 15px; color: var(--ink-faint); background: transparent; border: 1px dashed var(--rule-strong); padding: 7px 12px; border-radius: 6px 6px 0 0; cursor: pointer; line-height: 1; }
   .tab-add:hover { color: var(--teal); border-color: var(--teal); }
 
@@ -629,13 +632,73 @@
   }
 
   const tabsEl = document.getElementById("tabs");
+
+  // Whole-tab drag-to-reorder (like browser tabs: a click that doesn't move
+  // switches views, a click-and-drag reorders). Only the tabs backed by
+  // state.views participate — Trends and "+" are never draggable and never
+  // valid drop targets, matching Trends's existing pinned/non-deletable
+  // status (see below) and "+" being an action, not a view.
+  let draggedViewId = null;
+  function clearDragIndicators(){
+    tabsEl.querySelectorAll(".drag-over-before,.drag-over-after").forEach(el => el.classList.remove("drag-over-before","drag-over-after"));
+  }
+  // Dropping in the empty space after the last tab (but still left of Trends)
+  // appends to the end — the per-tab handlers below only fire directly over
+  // a tab, so this is what catches "drop past everything."
+  tabsEl.addEventListener("dragover", (e) => { if (draggedViewId !== null) e.preventDefault(); });
+  tabsEl.addEventListener("drop", (e) => {
+    if (e.target !== tabsEl || draggedViewId === null) return;
+    e.preventDefault();
+    const fromIdx = state.views.findIndex(x => x.id === draggedViewId);
+    if (fromIdx === -1) return;
+    const [moved] = state.views.splice(fromIdx, 1);
+    state.views.push(moved);
+    saveState(); renderTabs();
+  });
+
   function renderTabs(){
     tabsEl.innerHTML = "";
     state.views.forEach(v => {
       const b = document.createElement("button");
       b.className = "tab" + (v.id === state.activeView ? " active" : "");
       b.textContent = v.name;
+      b.draggable = true;
       b.onclick = () => { state.activeView = v.id; saveState(); render(); };
+      b.addEventListener("dragstart", (e) => {
+        draggedViewId = v.id;
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", v.id);
+        // Deferred so the browser's drag-image snapshot is taken before the
+        // tab fades — applying the class synchronously here can make the
+        // dragged ghost itself look half-transparent instead of just the tab
+        // left behind in the bar.
+        setTimeout(() => b.classList.add("dragging"), 0);
+      });
+      b.addEventListener("dragend", () => {
+        draggedViewId = null;
+        b.classList.remove("dragging");
+        clearDragIndicators();
+      });
+      b.addEventListener("dragover", (e) => {
+        if (draggedViewId === null || draggedViewId === v.id) return;
+        e.preventDefault();
+        const rect = b.getBoundingClientRect();
+        const before = (e.clientX - rect.left) < rect.width / 2;
+        clearDragIndicators();
+        b.classList.add(before ? "drag-over-before" : "drag-over-after");
+      });
+      b.addEventListener("drop", (e) => {
+        if (draggedViewId === null || draggedViewId === v.id) return;
+        e.preventDefault();
+        const rect = b.getBoundingClientRect();
+        const before = (e.clientX - rect.left) < rect.width / 2;
+        const fromIdx = state.views.findIndex(x => x.id === draggedViewId);
+        if (fromIdx === -1) return;
+        const [moved] = state.views.splice(fromIdx, 1);
+        const toIdx = state.views.findIndex(x => x.id === v.id);
+        state.views.splice(before ? toIdx : toIdx + 1, 0, moved);
+        saveState(); renderTabs();
+      });
       tabsEl.appendChild(b);
     });
     // Trends is a pinned, non-deletable tab — it's a cross-entity report, not
@@ -990,7 +1053,7 @@
       <div class="detail-section">
         <h3>Customers asking for more than one feature (${custIndex.length})</h3>
         ${custIndex.length ? custIndex.map(([name, reqs]) => `
-          <div class="qlink"><strong>${escapeHtml(name)}</strong> <span class="badge">· on ${reqs.length} requests: ${reqLinks(reqs)}</span></div>`).join("")
+          <div class="qlink">${escapeHtml(name)} <span class="badge">· on ${reqs.length} requests: ${reqLinks(reqs)}</span></div>`).join("")
           : `<div class="badge">No customer currently appears on more than one request.</div>`}
       </div>
     `;
