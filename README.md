@@ -54,11 +54,6 @@ npm install
 npm start
 ```
 
-On Mac, once `npm install` has been run at least once, you can also just
-double-click `Question.command` instead of using Terminal — it launches the
-app the same way `npm start` does (and runs `npm install` for you if it
-hasn't been done yet).
-
 `npm run demo` runs a small end-to-end proof of the backend on its own
 (seeds sample data, deletes the index, rebuilds it from the Markdown files,
 and runs a few sample SQL queries against it) without needing Electron.
