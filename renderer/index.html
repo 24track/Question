@@ -414,14 +414,32 @@
   let state = migrateState((await loadState()) || seed());
   if (!state.activeView && state.views.length) state.activeView = state.views[0].id;
 
-  const TOPIC_KEYWORDS = {
-    currency: ["currency", "exchange rate", "eur", "gbp", "usd", "convert"],
-    export: ["export", "csv", "download", "bulk"],
-    appearance: ["dark mode", "theme", "appearance", "colour", "color"],
-    notifications: ["notify", "notification", "slack", "alert", "ping"],
-    access: ["permission", "role", "access", "restrict"],
-    prioritisation: ["priority", "score", "rank", "weight"],
-  };
+  // Topic suggestion used to run off a fixed dictionary of keywords per topic
+  // (currency/export/appearance/etc, written for this prototype's original
+  // demo content) — which meant it could never suggest a topic someone
+  // actually uses in their own domain (e.g. "Maintenance", "Strata"), since
+  // that topic simply wasn't in the dictionary. Instead, it now learns each
+  // topic's vocabulary from the requests already tagged with it — the same
+  // word-overlap technique already used to match questions to requests — so
+  // it works for any topic, built-in or custom, based purely on what's
+  // actually been logged. The one limitation that comes with that: a topic
+  // with nothing tagged under it yet has no vocabulary to learn from, so it
+  // can't be suggested until at least one request has used it.
+  function suggestTopic(text){
+    const words = new Set(stem(text));
+    if (words.size === 0) return null;
+    let best = null, bestScore = 0;
+    customTopics().forEach(topic => {
+      const reqs = state.requests.filter(r => r.topic === topic);
+      if (!reqs.length) return;
+      const hay = stem(reqs.map(r => r.title + " " + r.description).join(" "));
+      const score = overlap(words, hay);
+      if (score > bestScore){ bestScore = score; best = topic; }
+    });
+    if (!best) return null;
+    const n = state.requests.filter(r => r.topic === best).length;
+    return { type:"topic", value:best, state:"suggested", reason:`similar wording to ${n} existing “${best}” request${n===1?"":"s"}` };
+  }
   function suggestTags(text){
     // Urgency is included here as a suggested chip, same as topic, so the draft
     // review flow looks and behaves the same as it always did. It's still lifted
@@ -432,9 +450,8 @@
     if (/urgent|asap|blocking|critical|breaking/.test(t)) tags.push({ type:"urgency", value:"high", state:"suggested", reason:"urgent language" });
     else if (/nice to have|whenever|no rush/.test(t)) tags.push({ type:"urgency", value:"low", state:"suggested", reason:"low-urgency language" });
     else tags.push({ type:"urgency", value:"medium", state:"suggested", reason:"default — no strong signal" });
-    for (const [topic, words] of Object.entries(TOPIC_KEYWORDS)){
-      if (words.some(w => t.includes(w))) { tags.push({ type:"topic", value:topic, state:"suggested", reason:"matched “"+words.find(w=>t.includes(w))+"”" }); break; }
-    }
+    const topicTag = suggestTopic(text);
+    if (topicTag) tags.push(topicTag);
     return tags;
   }
   function extractCustomers(text){
