@@ -119,6 +119,22 @@ here whenever a non-obvious choice gets made, or gets questioned and kept.
   *different*, working view already shows out from under an existing user
   does not. The new Shipped view is also added automatically on migration,
   so upgrading doesn't just make shipped requests disappear.
+- **Whether a request is shipped is derived from `status === "shipped"`,
+  not stored as its own field.** It used to be: a `shipped` boolean, set
+  only by the dedicated "Mark as shipped" button. But the generic Status
+  dropdown could independently set `status` to `"shipped"` without ever
+  touching that boolean, so the two could desync — the exact reported bug:
+  a request set to "Shipped" via the dropdown kept scoring and appearing as
+  if it were still open, because `shippedFilter` only checked the boolean,
+  until someone also clicked "Mark as shipped" to bring it in sync. Rather
+  than keep two things in sync by hand, `status` is now the single source
+  of truth and `isShipped(r)` (`r.status === "shipped"`) is computed
+  wherever shipped-ness is checked — there's no second field left to drift.
+  `migrateState()` strips the legacy `shipped` field from in-memory state on
+  load (mirroring how `tags`/`segment` are already retired), and the SQLite
+  index's `shipped` column is likewise computed from `status` when the index
+  is rebuilt, so a stale value in an old on-disk file can't linger there
+  either.
 
 ## UI & renderer
 

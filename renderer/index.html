@@ -305,6 +305,12 @@
   // which has no entry in STATUS_LABEL — every display of a status must fall
   // back to the raw value itself rather than showing "undefined".
   function statusLabel(s){ return STATUS_LABEL[s] || (s ? s.charAt(0).toUpperCase()+s.slice(1) : s); }
+  // Whether a request is shipped is derived from `status` alone — there is no
+  // separate stored boolean. (There used to be one, `r.shipped`, set only by
+  // the dedicated "Mark as shipped" button; the generic Status dropdown could
+  // set status to "shipped" without touching it, letting the two drift apart.
+  // See docs/DESIGN.md.)
+  function isShipped(r){ return r.status === "shipped"; }
   // Custom statuses (added via "+ Add new") are the only ones that can go
   // stale or get typo'd — the four built-ins are fixed because other logic
   // (the shipped flag, status-dot colors, board ordering) keys off them by name.
@@ -350,27 +356,27 @@
       { id: uid("req"), title: "Currency conversion calculator", description: "Convert prices between currencies inline when viewing invoices.",
         customers: ["Meridian Co", "Northwind", "Halberd Ltd"],
         urgency: "medium", topic: "currency",
-        status: "planned", quarter: "Q2 2027", dueDate: daysAgo(-10), createdAt: daysAgo(58), updatedAt: daysAgo(58), questionCount: 3, shipped: false },
+        status: "planned", quarter: "Q2 2027", dueDate: daysAgo(-10), createdAt: daysAgo(58), updatedAt: daysAgo(58), questionCount: 3 },
       { id: uid("req"), title: "Bulk export to CSV", description: "Export the full request list, not just the visible page.",
         customers: ["Northwind", "Faircrest", "Meridian Co", "Oakline"],
         urgency: "high", topic: "export",
-        status: "in-progress", quarter: "Q4 2026", dueDate: daysAgo(-3), createdAt: daysAgo(94), updatedAt: daysAgo(94), questionCount: 6, shipped: false },
+        status: "in-progress", quarter: "Q4 2026", dueDate: daysAgo(-3), createdAt: daysAgo(94), updatedAt: daysAgo(94), questionCount: 6 },
       { id: uid("req"), title: "Dark mode", description: "Full dark theme across the app, not just the editor.",
         customers: ["Halberd Ltd"],
         urgency: "low", topic: "appearance",
-        status: "shipped", quarter: "Q3 2026", dueDate: null, createdAt: daysAgo(140), updatedAt: daysAgo(140), questionCount: 2, shipped: true },
+        status: "shipped", quarter: "Q3 2026", dueDate: null, createdAt: daysAgo(140), updatedAt: daysAgo(140), questionCount: 2 },
       { id: uid("req"), title: "Slack notifications for new questions", description: "Ping a Slack channel whenever a customer question comes in unanswered.",
         customers: ["Faircrest"],
         urgency: "medium", topic: "notifications",
-        status: "new", quarter: "Q2 2027", dueDate: null, createdAt: daysAgo(12), updatedAt: daysAgo(12), questionCount: 1, shipped: false },
+        status: "new", quarter: "Q2 2027", dueDate: null, createdAt: daysAgo(12), updatedAt: daysAgo(12), questionCount: 1 },
       { id: uid("req"), title: "Role-based permissions", description: "Restrict who can edit vs. only view requests once the team grows.",
         customers: ["Oakline", "Meridian Co"],
         urgency: "low", topic: "access",
-        status: "new", quarter: "Q1 2027", dueDate: daysAgo(-2), createdAt: daysAgo(30), updatedAt: daysAgo(30), questionCount: 2, shipped: false },
+        status: "new", quarter: "Q1 2027", dueDate: daysAgo(-2), createdAt: daysAgo(30), updatedAt: daysAgo(30), questionCount: 2 },
       { id: uid("req"), title: "Weighted priority score", description: "A single combined score view blending urgency, customer count and age.",
         customers: ["Northwind"],
         urgency: "low", topic: "prioritisation",
-        status: "planned", quarter: "Q1 2027", dueDate: daysAgo(-25), createdAt: daysAgo(20), updatedAt: daysAgo(20), questionCount: 1, shipped: false },
+        status: "planned", quarter: "Q1 2027", dueDate: daysAgo(-25), createdAt: daysAgo(20), updatedAt: daysAgo(20), questionCount: 1 },
     ];
     const questions = [
       { id: uid("q"), text: "Can we show prices in EUR as well as USD for Meridian Co?", matchedRequestId: requests[0].id, answer: null, createdAt: daysAgo(50) },
@@ -430,6 +436,10 @@
       }
       delete r.tags;
       delete r.segment;
+      // Legacy field: shipped-ness is now derived purely from status (see
+      // isShipped()) — strip the old separately-stored boolean so it can't
+      // linger, stale, in memory for a request whose status changed since.
+      delete r.shipped;
       if (r.updatedAt === undefined) r.updatedAt = r.createdAt;
       if (r.dueDate === undefined) r.dueDate = null;
     });
@@ -889,8 +899,8 @@
         <div class="toolbar-actions">${isScore ? `<button class="btn" id="adjustWeightsBtn">Adjust weights</button>` : ""}${view.builtin ? "" : `<button class="btn btn-danger" id="deleteViewBtn">Delete view</button>`}</div>
       </div>`;
     if (state.requests.length === 0){ mainEl.innerHTML = toolbar + `<div class="empty-state">No feature requests yet. Ask the composer below to raise one.</div>`; return; }
-    const visible = shippedFilter === "hide" ? state.requests.filter(r => !r.shipped)
-      : shippedFilter === "only" ? state.requests.filter(r => r.shipped)
+    const visible = shippedFilter === "hide" ? state.requests.filter(r => !isShipped(r))
+      : shippedFilter === "only" ? state.requests.filter(r => isShipped(r))
       : state.requests;
     if (visible.length === 0){
       const msg = shippedFilter === "only" ? "Nothing shipped yet." : "Nothing left in this view — everything's shipped.";
@@ -1258,7 +1268,7 @@
       }
       const r = state.requests.find(x => x.id === f.matchedRequestId);
       if (!r) return `The request this was matched to has since been deleted.<br><button data-raise-from-id="${f.id}" data-text="${escapeHtml(f.text)}">Raise a feature request from this</button>`;
-      const statusNote = r.shipped ? `Shipped${r.quarter? " in "+r.quarter : ""}.` : `Status: ${statusLabel(r.status)}${r.quarter ? ", targeted "+r.quarter : ""}. Asked ${r.questionCount} time${r.questionCount===1?"":"s"} so far.`;
+      const statusNote = isShipped(r) ? `Shipped${r.quarter? " in "+r.quarter : ""}.` : `Status: ${statusLabel(r.status)}${r.quarter ? ", targeted "+r.quarter : ""}. Asked ${r.questionCount} time${r.questionCount===1?"":"s"} so far.`;
       return `${statusNote}<span class="src" data-go-req="${r.id}">Matched to request: ${escapeHtml(r.title)} — open it</span><br><button data-raise-from-id="${f.id}" data-text="${escapeHtml(f.text)}">Not the right match? Raise a new feature request instead</button>`;
     }
     return f.html;
@@ -1376,7 +1386,7 @@
     const topicTag = pendingTags.find(t => t.type === "topic");
     const topic = topicTag ? topicTag.value : null;
     const now = Date.now();
-    const req = { id: uid("req"), title, description, customers, urgency, topic, status: "new", quarter: "Unscheduled", dueDate: null, createdAt: now, updatedAt: now, questionCount: 0, shipped: false };
+    const req = { id: uid("req"), title, description, customers, urgency, topic, status: "new", quarter: "Unscheduled", dueDate: null, createdAt: now, updatedAt: now, questionCount: 0 };
     state.requests.push(req);
     // If this draft was opened from a "not the right match?" button (see
     // feedBodyHtml's "matched-request" case), the original question is still
@@ -1453,7 +1463,7 @@
       </div>
       <div class="modal-actions">
         <button class="btn btn-danger" id="deleteRequestBtn" style="margin-right:auto;">Delete request</button>
-        ${!r.shipped ? `<button class="btn-secondary" id="markShipped">Mark as shipped</button>` : `<span class="badge" style="align-self:center;">Answered by this feature</span>`}
+        ${!isShipped(r) ? `<button class="btn-secondary" id="markShipped">Mark as shipped</button>` : `<span class="badge" style="align-self:center;">Answered by this feature</span>`}
         <button class="btn-primary" id="closeDetailBtn">Done</button>
       </div>`;
     modal.querySelectorAll("[data-close]").forEach(el => el.onclick = () => closeOverlayHandled("detailOverlay"));
@@ -1522,7 +1532,7 @@
     addCustInput.addEventListener("blur", commitAddCustomer);
 
     const shipBtn = modal.querySelector("#markShipped");
-    if (shipBtn) shipBtn.onclick = () => { r.shipped = true; r.status = "shipped"; r.updatedAt = Date.now(); saveState(); openRequestDetail(id); render(); };
+    if (shipBtn) shipBtn.onclick = () => { r.status = "shipped"; r.updatedAt = Date.now(); saveState(); openRequestDetail(id); render(); };
     modal.querySelector("#closeDetailBtn").onclick = () => { closeOverlay("detailOverlay"); render(); };
     modal.querySelector("#deleteRequestBtn").onclick = () => {
       if (!confirm(`Permanently delete "${r.title}"? This can't be undone. Its ${linkedQ.length} linked question${linkedQ.length===1?"":"s"} will stay logged but unlinked.`)) return;

@@ -267,7 +267,7 @@ function rebuildIndex(dataDir) {
   requests.forEach(r => {
     insertReq.run(
       r.id, r.title, r.status, r.urgency, r.topic || null, r.quarter || null,
-      r.dueDate || null, r.createdAt, r.updatedAt, r.questionCount || 0, r.shipped ? 1 : 0
+      r.dueDate || null, r.createdAt, r.updatedAt, r.questionCount || 0, r.status === "shipped" ? 1 : 0
     );
     (r.customers || []).forEach(c => insertCust.run(r.id, c));
   });

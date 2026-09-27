@@ -21,15 +21,15 @@ const requests = [
   { id: "req_1", title: "Currency conversion calculator", description: "Convert prices between currencies.",
     customers: ["Meridian Co", "Northwind", "Halberd Ltd"], urgency: "medium", topic: "currency",
     status: "planned", quarter: "Q2 2027", dueDate: daysAgo(-10), createdAt: daysAgo(58), updatedAt: daysAgo(58),
-    questionCount: 3, shipped: false },
+    questionCount: 3 },
   { id: "req_2", title: "Bulk export to CSV", description: "Export the full request list.",
     customers: ["Northwind", "Faircrest", "Meridian Co", "Oakline"], urgency: "high", topic: "export",
     status: "in-progress", quarter: "Q4 2026", dueDate: daysAgo(-3), createdAt: daysAgo(94), updatedAt: daysAgo(94),
-    questionCount: 6, shipped: false },
+    questionCount: 6 },
   { id: "req_3", title: "Dark mode", description: "Full dark theme.",
     customers: ["Halberd Ltd"], urgency: "low", topic: "appearance",
     status: "shipped", quarter: "Q3 2026", dueDate: null, createdAt: daysAgo(140), updatedAt: daysAgo(140),
-    questionCount: 2, shipped: true },
+    questionCount: 2 },
 ];
 const questions = [
   { id: "q_1", text: "Does it support GBP?", matchedRequestId: "req_1", answer: null, createdAt: daysAgo(20) },
