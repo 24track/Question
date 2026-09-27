@@ -37,6 +37,23 @@ function ensureDataDirs(dataDir) {
   fs.mkdirSync(path.join(dataDir, QUESTIONS_DIR), { recursive: true });
 }
 
+// ---- "Ever launched" marker ----
+// Deliberately NOT inside dataDir: the whole point is that it survives the
+// user deleting their visible data folder to reset the app (see README /
+// docs/DESIGN.md). It holds no user content, just "has this app produced
+// its example data at least once, ever, on this machine" — so example data
+// is seeded on the true first run only, and never reappears uninvited after
+// that, however many times the visible data folder gets deleted and
+// recreated. markerFile is optional (callers outside Electron, e.g. the
+// `npm run demo` script, can omit it and just always get everSeeded=false).
+function hasEverLaunched(markerFile) {
+  return !!markerFile && fs.existsSync(markerFile);
+}
+function markLaunched(markerFile) {
+  fs.mkdirSync(path.dirname(markerFile), { recursive: true });
+  fs.writeFileSync(markerFile, new Date().toISOString(), "utf8");
+}
+
 // ---- Minimal YAML-frontmatter read/write (no external deps) ----
 // Only needs to round-trip the flat, JSON-safe field types this app actually
 // uses (strings, numbers, booleans, null, and string arrays), so a hand
@@ -199,12 +216,20 @@ function syncAll(dataDir, requests, questions, settings) {
   rebuildIndex(dataDir);
 }
 
-function loadAll(dataDir) {
+function loadAll(dataDir, markerFile) {
   ensureDataDirs(dataDir);
+  // Read the marker BEFORE writing it, so the caller learns whether this is
+  // the true first launch (in which case the renderer will seed example
+  // data — see renderer/index.html's loadState()) — then write it so every
+  // launch after this one, on this machine, reports everSeeded: true, no
+  // matter what happens to dataDir in between.
+  const everSeeded = hasEverLaunched(markerFile);
+  if (markerFile && !everSeeded) markLaunched(markerFile);
   return {
     requests: readAllRequests(dataDir),
     questions: readAllQuestions(dataDir),
     settings: loadSettings(dataDir),
+    everSeeded,
   };
 }
 

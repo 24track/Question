@@ -16,6 +16,14 @@ const DATA_DIR = process.env.QUESTION_DATA_DIR
   ? path.resolve(process.env.QUESTION_DATA_DIR)
   : path.join(os.homedir(), "Documents", "Question Data");
 
+// Separate from DATA_DIR on purpose — see backend.cjs's hasEverLaunched().
+// Electron's own per-user app-support directory, not the visible Documents
+// folder, is exactly where a marker needs to live to survive the user
+// deleting DATA_DIR to reset the app. app.getPath() isn't safe to call
+// before the app is ready, so this is resolved inside whenReady() below,
+// ahead of window creation and the IPC handlers that read it.
+let SEEDED_MARKER = null;
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1100,
@@ -49,6 +57,7 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  SEEDED_MARKER = path.join(app.getPath("userData"), "seeded.marker");
   backend.ensureDataDirs(DATA_DIR);
   createWindow();
 
@@ -66,7 +75,7 @@ app.on("window-all-closed", () => {
 // matching the renderer's fire-and-forget saveState() and one-shot startup
 // load — see renderer/index.html's loadState()/saveState(). ----
 ipcMain.handle("question:loadAll", () => {
-  return backend.loadAll(DATA_DIR);
+  return backend.loadAll(DATA_DIR, SEEDED_MARKER);
 });
 
 ipcMain.handle("question:syncAll", (event, { requests, questions, settings }) => {

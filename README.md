@@ -109,16 +109,21 @@ Markdown files, human-readable, nothing hidden away in an app-support
 folder), and it's seeded with a handful of example feature requests and
 questions so there's something to look at right away.
 
-That seeding only ever happens once, on that true first run. Updating the
-app's code later (a new download, a `git pull`, whatever) never touches
-`Question Data` — your real data and the app's code are entirely separate,
-so upgrading the app never risks your data. If you ever want to wipe
-everything, use the **Clear all data** button in the header — but note
-that it empties your requests and questions, it doesn't bring the
-examples back (since it's no longer a first run once real data has
-existed). To get the example data back specifically, delete the
-`Question Data` folder entirely and relaunch, which forces a genuine
-first run.
+That seeding only ever happens once — the true first time the app has ever
+run on your machine. Updating the app's code later (a new download, a
+`git pull`, whatever) never touches `Question Data` — your real data and the
+app's code are entirely separate, so upgrading the app never risks your
+data.
+
+**To wipe everything and start clean, quit the app and delete the
+`Question Data` folder, then relaunch.** There's no in-app button for this
+— an always-visible, one-click, unrecoverable wipe sitting in the main UI
+forever was judged too dangerous to keep (see docs/DESIGN.md), and this
+achieves the same thing more safely: it takes a deliberate action outside
+the app, and on most systems the deleted folder lands in the Trash/Recycle
+Bin first rather than being gone immediately. You'll land on a genuinely
+empty app, not the example data again — the example seed is a true, one-time
+first-run affordance, not something a later reset brings back.
 
 `npm run demo` runs a small end-to-end proof of the backend on its own
 (seeds sample data, deletes the index, rebuilds it from the Markdown files,

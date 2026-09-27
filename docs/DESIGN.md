@@ -45,16 +45,35 @@ here whenever a non-obvious choice gets made, or gets questioned and kept.
   is a known, accepted limitation, not a bug: everything else (requests,
   questions, settings, view layout, feed panel height) round-trips to disk;
   the feed transcript itself deliberately doesn't.
-- **Example data only ever seeds on a true first run.** "Clear all data"
-  empties requests/questions but does not bring the examples back, since
-  it's no longer a first run once real data has existed. Getting the seed
-  data back requires deleting the `Question Data` folder entirely, forcing
-  a genuine first run — clearing and reseeding are kept as separate,
-  deliberately non-symmetric actions so a misclick can't quietly restore
-  fake data on top of real data.
+- **Example data only ever seeds on the true first run — ever, on this
+  machine — not just "no data currently on disk."** Those aren't the same
+  test: deleting `Question Data` to reset the app (see the "Clear all data"
+  entry below) also deletes `settings.json`, which used to be the only
+  first-run signal, so it used to make the app look exactly like a fresh
+  install and reseed the examples again. It now also checks a tiny marker
+  file, `seeded.marker`, written on first launch — deliberately kept
+  *outside* `Question Data`, in Electron's own per-user app-support
+  directory (see `main.cjs`'s `SEEDED_MARKER`), specifically so it survives
+  the visible data folder being deleted. This is the one deliberate
+  exception to "nothing hidden in app-support" above: unlike everything
+  else, this file holds no user content at all, just one bit ("has this
+  app ever produced its example data before") — a reset should give you a
+  truly blank app, not the demo content again.
 
 ## UI & renderer
 
+- **There is no "Clear all data" button.** There used to be one — a
+  permanent, always-visible, one-click, unrecoverable wipe in the main
+  header. It got removed rather than hidden behind a confirmation step or a
+  keyboard shortcut: there's no realistic scenario where you'd want to wipe
+  your actual content while keeping your views/topics/statuses set up
+  around it (the one thing the button did that a full reset can't), so it
+  wasn't pulling its weight against the risk of a misclick once real data
+  is in the app. Quitting and deleting the `Question Data` folder (see
+  "Running it" in the README) does the same job — and more safely, since
+  it requires a deliberate action outside the app and typically goes
+  through the OS Trash/Recycle Bin first, rather than a hard delete inside
+  the app itself.
 - **Single-file HTML/CSS/JS renderer, no framework, no build step.** Keeps
   the whole UI inspectable and editable directly; a build step or framework
   would be a real cost for a UI this size.
