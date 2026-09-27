@@ -219,11 +219,18 @@
     </div>
     <div class="field-row">
       <div class="field"><label for="vSort">Sort by</label>
-        <select id="vSort"><option value="score">Priority score</option><option value="customers">Customer count</option><option value="questions">Question count</option><option value="age">Age (oldest first)</option><option value="dueDate">Due date</option><option value="urgency">Urgency</option><option value="title">Title (A–Z)</option></select>
+        <select id="vSort"><option value="score">Priority score</option><option value="customers">Customer count</option><option value="questions">Question count</option><option value="age">Age (oldest first)</option><option value="updated">Last updated</option><option value="dueDate">Due date</option><option value="urgency">Urgency</option><option value="title">Title (A–Z)</option></select>
       </div>
       <div class="field"><label for="vDir">Direction</label>
         <select id="vDir"><option value="desc">Descending</option><option value="asc">Ascending</option></select>
       </div>
+    </div>
+    <div class="field"><label for="vShipped">Shipped requests</label>
+      <select id="vShipped">
+        <option value="all">Show alongside everything else</option>
+        <option value="hide">Hide from this view</option>
+        <option value="only">Show only shipped requests</option>
+      </select>
     </div>
     <div class="modal-actions">
       <button class="btn-secondary" data-close="viewOverlay">Cancel</button>
@@ -322,11 +329,18 @@
   // land on identical defaults rather than two copies drifting apart.
   function defaultViews(){
     return [
-      { id: uid("v"), name: "Today", layout: "table", group: "none", sort: "score", dir: "desc", builtin: true },
-      { id: uid("v"), name: "All requests", layout: "table", group: "none", sort: "age", dir: "asc", builtin: true },
-      { id: uid("v"), name: "By urgency", layout: "board", group: "urgency", sort: "customers", dir: "desc", builtin: true },
-      { id: uid("v"), name: "Topic heat", layout: "gallery", group: "topic", sort: "questions", dir: "desc", builtin: true },
-      { id: uid("v"), name: "By quarter", layout: "board", group: "quarter", sort: "urgency", dir: "desc", builtin: true },
+      // Today and By urgency are working views — what to do next — so
+      // shipped requests (permanently "done") default to hidden in both;
+      // otherwise a completed item with a past due date only climbs the
+      // priority score over time instead of dropping out of the way. All
+      // requests / Topic heat / By quarter default to showing everything,
+      // since those are read as comprehensive/historical views on purpose.
+      { id: uid("v"), name: "Today", layout: "table", group: "none", sort: "score", dir: "desc", shippedFilter: "hide", builtin: true },
+      { id: uid("v"), name: "All requests", layout: "table", group: "none", sort: "age", dir: "asc", shippedFilter: "all", builtin: true },
+      { id: uid("v"), name: "By urgency", layout: "board", group: "urgency", sort: "customers", dir: "desc", shippedFilter: "hide", builtin: true },
+      { id: uid("v"), name: "Topic heat", layout: "gallery", group: "topic", sort: "questions", dir: "desc", shippedFilter: "all", builtin: true },
+      { id: uid("v"), name: "By quarter", layout: "board", group: "quarter", sort: "urgency", dir: "desc", shippedFilter: "all", builtin: true },
+      { id: uid("v"), name: "Shipped", layout: "table", group: "none", sort: "updated", dir: "desc", shippedFilter: "only", builtin: true },
     ];
   }
   function defaultScoreWeights(){ return { urgency: 3, customers: 2, questions: 1.5, age: 0.03, dueDate: 1 }; }
@@ -420,7 +434,19 @@
       if (r.dueDate === undefined) r.dueDate = null;
     });
     if (!s.scoreWeights) s.scoreWeights = defaultScoreWeights();
-    if (!s.views.some(v => v.sort === "score")) s.views.unshift({ id: uid("v"), name: "Today", layout: "table", group: "none", sort: "score", dir: "desc", builtin: true });
+    if (!s.views.some(v => v.sort === "score")) s.views.unshift({ id: uid("v"), name: "Today", layout: "table", group: "none", sort: "score", dir: "desc", shippedFilter: "hide", builtin: true });
+    // shippedFilter is new — default every existing view to "all" (unfiltered),
+    // preserving exactly what it showed before, EXCEPT the Today view: a
+    // shipped request's score only ever climbs as its due date falls further
+    // into the past (see the comment in render()), which is the actual bug
+    // this was added to fix, so upgrading straight to a clean Today view
+    // beats requiring a manual fix. Identified by sort==="score", the same
+    // heuristic already used just above to find/insert it.
+    s.views.forEach(v => { if (v.shippedFilter === undefined) v.shippedFilter = v.sort === "score" ? "hide" : "all"; });
+    // Also add the new built-in "Shipped" view if this save predates it, so
+    // upgrading users get somewhere shipped requests actually live now that
+    // Today/By urgency can hide them — not just a spot they vanish from.
+    if (!s.views.some(v => v.shippedFilter === "only")) s.views.push({ id: uid("v"), name: "Shipped", layout: "table", group: "none", sort: "updated", dir: "desc", shippedFilter: "only", builtin: true });
     // Older "unanswered" feed entries were frozen HTML strings with no id, so
     // they can't be tracked to a created request — give them what they need
     // to work like new ones (see feedBodyHtml/saveDraft), rather than crashing.
@@ -722,6 +748,7 @@
         case "customers": av = a.customers.length; bv = b.customers.length; break;
         case "questions": av = a.questionCount; bv = b.questionCount; break;
         case "age": av = a.createdAt; bv = b.createdAt; break;
+        case "updated": av = a.updatedAt; bv = b.updatedAt; break;
         case "urgency": av = URGENCY_RANK[a.urgency] || 0; bv = URGENCY_RANK[b.urgency] || 0; break;
         case "title": av = a.title.toLowerCase(); bv = b.title.toLowerCase(); break;
         case "score": av = scoreOf(a); bv = scoreOf(b); break;
@@ -849,12 +876,27 @@
     const view = state.views.find(v => v.id === state.activeView) || state.views[0];
     if (!view) { mainEl.innerHTML = `<div class="empty-state">No views yet. Add one with the + tab.</div>`; return; }
     const isScore = view.sort === "score";
+    // Shipped requests otherwise never leave a view once done — a completed
+    // item's due date, if it has one, only ever falls further into the past,
+    // which the priority score reads as increasingly overdue/urgent rather
+    // than "no longer relevant." Filtering here (rather than changing what
+    // the score means for open requests) keeps the score formula meaningful
+    // for the requests it's actually for. See docs/DESIGN.md.
+    const shippedFilter = view.shippedFilter || "all";
+    const shippedNote = shippedFilter === "hide" ? ", hiding shipped" : shippedFilter === "only" ? ", shipped only" : "";
     const toolbar = `<div class="view-toolbar">
-        <div class="view-descriptor">${view.layout.charAt(0).toUpperCase()+view.layout.slice(1)}${view.group!=='none' ? ", grouped by <b>"+view.group+"</b>" : ""}, sorted by <b>${sortLabel(view.sort)}</b> (${sortDirLabel(view.sort, view.dir)})</div>
+        <div class="view-descriptor">${view.layout.charAt(0).toUpperCase()+view.layout.slice(1)}${view.group!=='none' ? ", grouped by <b>"+view.group+"</b>" : ""}, sorted by <b>${sortLabel(view.sort)}</b> (${sortDirLabel(view.sort, view.dir)})${shippedNote}</div>
         <div class="toolbar-actions">${isScore ? `<button class="btn" id="adjustWeightsBtn">Adjust weights</button>` : ""}${view.builtin ? "" : `<button class="btn btn-danger" id="deleteViewBtn">Delete view</button>`}</div>
       </div>`;
     if (state.requests.length === 0){ mainEl.innerHTML = toolbar + `<div class="empty-state">No feature requests yet. Ask the composer below to raise one.</div>`; return; }
-    const sorted = sortReqs(state.requests, view.sort, view.dir);
+    const visible = shippedFilter === "hide" ? state.requests.filter(r => !r.shipped)
+      : shippedFilter === "only" ? state.requests.filter(r => r.shipped)
+      : state.requests;
+    if (visible.length === 0){
+      const msg = shippedFilter === "only" ? "Nothing shipped yet." : "Nothing left in this view — everything's shipped.";
+      mainEl.innerHTML = toolbar + `<div class="empty-state">${msg}</div>`; return;
+    }
+    const sorted = sortReqs(visible, view.sort, view.dir);
     const groups = groupReqs(sorted, view.group, view.sort, view.dir);
     let body = view.layout === "table" ? renderTable(sorted, isScore) : view.layout === "board" ? renderBoard(groups) : renderGallery(groups);
     mainEl.innerHTML = toolbar + body;
@@ -1065,11 +1107,12 @@
     });
     mainEl.querySelectorAll("[data-go-req]").forEach(el => { el.onclick = () => openRequestDetail(el.getAttribute("data-go-req")); });
   }
-  function sortLabel(s){ return { customers:"customer count", questions:"question count", age:"creation date", urgency:"urgency", title:"title", score:"priority score", dueDate:"due date" }[s] || s; }
+  function sortLabel(s){ return { customers:"customer count", questions:"question count", age:"creation date", updated:"last updated", urgency:"urgency", title:"title", score:"priority score", dueDate:"due date" }[s] || s; }
   // "high to low" / "low to high" reads fine for a count or a score, but not
-  // for a date — "age" is really "creation date" ordered old-to-new/new-to-old.
+  // for a date — "age"/"updated" are really creation/update dates ordered
+  // old-to-new/new-to-old.
   function sortDirLabel(sort, dir){
-    if (sort === "age") return dir === "desc" ? "new to old" : "old to new";
+    if (sort === "age" || sort === "updated") return dir === "desc" ? "new to old" : "old to new";
     return dir === "desc" ? "high to low" : "low to high";
   }
 
@@ -1149,9 +1192,10 @@
     const name = document.getElementById("vName").value.trim();
     if (!name) { document.getElementById("vName").focus(); return; }
     const v = { id: uid("v"), name, layout: document.getElementById("vLayout").value, group: document.getElementById("vGroup").value,
-      sort: document.getElementById("vSort").value, dir: document.getElementById("vDir").value, builtin: false };
+      sort: document.getElementById("vSort").value, dir: document.getElementById("vDir").value,
+      shippedFilter: document.getElementById("vShipped").value, builtin: false };
     state.views.push(v); state.activeView = v.id; saveState();
-    closeOverlay("viewOverlay"); document.getElementById("vName").value = ""; render();
+    closeOverlay("viewOverlay"); document.getElementById("vName").value = ""; document.getElementById("vShipped").value = "all"; render();
   };
 
   const feedEl = document.getElementById("feed");

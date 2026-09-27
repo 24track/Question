@@ -60,6 +60,42 @@ here whenever a non-obvious choice gets made, or gets questioned and kept.
   app ever produced its example data before") — a reset should give you a
   truly blank app, not the demo content again.
 
+## Views & scoring
+
+- **A shipped request's priority score only ever climbs, never drops out of
+  the way, unless something filters it out.** The score formula reads an
+  overdue due date as increasingly urgent (`10 + min(20, daysOverdue)` in
+  `computeScoreParts()`) — correct for an open request that's slipping, but
+  a shipped request has no "slipping" left; it's just done. Rather than
+  special-case "shipped" inside the score formula itself (which would make
+  the formula's meaning conditional and harder to reason about), each view
+  has a `shippedFilter` ("all" / "hide" / "only") applied before
+  sort/group — so the formula stays one honest thing, and whether a
+  finished item should even be competing for attention is a per-view
+  decision instead.
+- **Today and By urgency default to hiding shipped requests; All requests,
+  Topic heat and By quarter default to showing everything.** The first two
+  are working views — "what do I do next" — where a permanently-done item
+  is just clutter (this is the bug that prompted `shippedFilter` to exist
+  at all: a shipped, overdue request was sorting to the top of Today). The
+  other three are read as comprehensive or historical on purpose — "Topic
+  heat" in particular loses meaning if it can't show that a shipped
+  feature is still generating questions, which is itself a signal (probably
+  a discoverability problem, not a backlog problem).
+- **A dedicated "Shipped" view (`shippedFilter: "only"`) exists so hiding
+  shipped requests elsewhere doesn't mean losing track of them.** Hiding is
+  a view-level display choice, never a data-level one — nothing about a
+  request's shipped status affects whether it's in `state.requests`, only
+  which views choose to show it.
+- **Migrating an existing install only changes the one view the bug was
+  actually in.** Every pre-existing view defaults `shippedFilter` to `"all"`
+  (i.e., exactly what it already showed) except the score-sorted Today view,
+  which defaults to `"hide"` — on the theory that fixing the reported bug
+  automatically beats requiring a manual step, but silently changing what a
+  *different*, working view already shows out from under an existing user
+  does not. The new Shipped view is also added automatically on migration,
+  so upgrading doesn't just make shipped requests disappear.
+
 ## UI & renderer
 
 - **There is no "Clear all data" button.** There used to be one — a

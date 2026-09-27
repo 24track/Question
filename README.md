@@ -18,7 +18,9 @@ questions came in, age, and due-date proximity.
 
 - **Today view** — a single, adjustable priority score (urgency, customer
   count, question volume, age, due-date proximity) surfaces what to work on
-  next, instead of a flat backlog.
+  next, instead of a flat backlog. Shipped requests don't clutter it — they
+  land in their own **Shipped** view instead (any view can be set to hide
+  shipped requests, show them alongside everything else, or show only them).
 - **Feature requests** — track status, urgency, topic, quarter, customers,
   and due date per request; raise a request straight from a logged question
   so duplicates get merged instead of re-created.
