@@ -114,11 +114,14 @@
 
   .empty-state { color: var(--ink-faint); font-size: 13px; padding: 40px 10px; text-align: center; border: 1px dashed var(--rule); border-radius: 6px; }
 
+  #feedResizeHandle { flex-shrink: 0; height: 9px; margin-top: -1px; cursor: row-resize; position: relative; background: transparent; touch-action: none; }
+  #feedResizeHandle::after { content: ""; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 44px; height: 3px; border-radius: 2px; background: var(--rule-strong); transition: background 0.15s ease; }
+  #feedResizeHandle:hover::after, #feedResizeHandle.dragging::after { background: var(--teal); }
   .composer-wrap { flex-shrink: 0; background: var(--paper); border-top: 1px solid var(--rule-strong); padding: 12px 24px calc(14px + env(safe-area-inset-bottom, 0px)); }
   #resumeDraftBar { display: none; font-size: 12px; color: var(--ink-soft); margin-bottom: 8px; padding: 6px 10px; border: 1px dashed var(--rule-strong); border-radius: 6px; }
   #resumeDraftBar.show { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
   #resumeDraftBar button { font-family: var(--font-body); font-size: 11.5px; font-weight: 600; border: 1px solid var(--rule-strong); border-radius: 5px; background: transparent; color: var(--ink); padding: 3px 10px; cursor: pointer; }
-  #feed { max-height: 30vh; overflow-y: auto; margin-bottom: 10px; display: flex; flex-direction: column; gap: 8px; }
+  #feed { max-height: var(--feed-height, 30vh); overflow-y: auto; margin-bottom: 10px; display: flex; flex-direction: column; gap: 8px; }
   .feed-empty { color: var(--ink-faint); font-size: 12.5px; padding: 4px 2px; }
   .feed-item { max-width: 640px; font-size: 13px; }
   .feed-q { background: var(--rule); color: var(--ink); display: inline-block; padding: 7px 12px; border-radius: 10px 10px 10px 2px; }
@@ -185,6 +188,8 @@
 </header>
 
 <main id="main"></main>
+
+<div id="feedResizeHandle" title="Drag to resize the conversation panel"></div>
 
 <div class="composer-wrap">
   <div id="resumeDraftBar"><span id="resumeDraftLabel"></span><button id="resumeDraftBtn">Continue draft</button></div>
@@ -261,6 +266,7 @@
       activeView: (settings && settings.activeView) || null,
       scoreWeights: (settings && settings.scoreWeights) || defaultScoreWeights(),
       theme: (settings && settings.theme) || "system",
+      feedHeightPx: (settings && settings.feedHeightPx) || null,
       feed: [],
     };
   }
@@ -271,7 +277,7 @@
   function saveState(){
     window.questionAPI.syncAll({
       requests: state.requests, questions: state.questions,
-      settings: { views: state.views, activeView: state.activeView, scoreWeights: state.scoreWeights, theme: state.theme },
+      settings: { views: state.views, activeView: state.activeView, scoreWeights: state.scoreWeights, theme: state.theme, feedHeightPx: state.feedHeightPx },
     }).catch(err => console.error("Failed to save:", err));
   }
 
@@ -357,7 +363,7 @@
       requests, questions,
       views: defaultViews(),
       scoreWeights: defaultScoreWeights(),
-      activeView: null, feed: []
+      activeView: null, feedHeightPx: null, feed: []
     };
   }
 
@@ -399,6 +405,7 @@
       }
     });
     if (!s.theme) s.theme = "system";
+    if (s.feedHeightPx === undefined) s.feedHeightPx = null;
     return s;
   }
 
@@ -1411,6 +1418,54 @@
     render();
     renderFeed();
   };
+
+  // Draggable divider between the Views area (main) and the conversation panel
+  // (composer-wrap). The feed's max-height is a CSS custom property so drag
+  // just tweaks a number; the chosen height is persisted (feedHeightPx) so it
+  // survives reloads, same as any other layout setting.
+  (function wireFeedResize(){
+    const handle = document.getElementById("feedResizeHandle");
+    const MIN_PX = 60;
+    function maxPx(){ return Math.round(window.innerHeight * 0.7); }
+    function apply(px){
+      const clamped = Math.max(MIN_PX, Math.min(maxPx(), px));
+      document.documentElement.style.setProperty("--feed-height", clamped + "px");
+      return clamped;
+    }
+    const initial = state.feedHeightPx || Math.round(window.innerHeight * 0.3);
+    apply(initial);
+
+    let dragging = false, startY = 0, startPx = 0;
+    handle.addEventListener("mousedown", (e) => {
+      dragging = true;
+      startY = e.clientY;
+      const cur = parseInt(getComputedStyle(document.documentElement).getPropertyValue("--feed-height"), 10);
+      startPx = Number.isFinite(cur) ? cur : initial;
+      handle.classList.add("dragging");
+      document.body.style.userSelect = "none";
+      e.preventDefault();
+    });
+    window.addEventListener("mousemove", (e) => {
+      if (!dragging) return;
+      // Handle sits above the feed panel: dragging up (deltaY negative going
+      // down means startY - clientY is positive when moving up) grows it.
+      apply(startPx + (startY - e.clientY));
+    });
+    window.addEventListener("mouseup", () => {
+      if (!dragging) return;
+      dragging = false;
+      handle.classList.remove("dragging");
+      document.body.style.userSelect = "";
+      const finalPx = parseInt(getComputedStyle(document.documentElement).getPropertyValue("--feed-height"), 10);
+      state.feedHeightPx = Number.isFinite(finalPx) ? finalPx : state.feedHeightPx;
+      saveState();
+    });
+    // Keep the panel within bounds if the window is resized smaller.
+    window.addEventListener("resize", () => {
+      const cur = parseInt(getComputedStyle(document.documentElement).getPropertyValue("--feed-height"), 10);
+      if (Number.isFinite(cur)) apply(cur);
+    });
+  })();
 
   renderFeed(); renderHeaderMeta(); render();
   const origSave = saveState;

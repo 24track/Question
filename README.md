@@ -32,6 +32,47 @@ questions came in, age, and due-date proximity.
   the same way for both.
 - **Light / dark / system theme.**
 
+## How question matching works
+
+Typing a question into the composer tries, in order: an exact customer/topic
+lookup, then a match against logged requests and previously-answered
+questions, then (if it looks like "raise a feature request for...") a new
+draft. The request/question match is plain keyword overlap — it stems your
+words and counts how many also appear in a request's title and description
+(or a previously-answered question's text) — not a semantic or AI match, so
+it only finds things that share actual vocabulary with what you typed.
+
+**Works well:**
+- "Does the currency calculator support GBP?" → matches a request titled
+  *Currency conversion calculator* on shared words like "currency"/"calculator".
+- Typing a topic or customer name on its own, e.g. "Travel" or "Meridian Co"
+  → lists every request under that topic or customer, rather than guessing
+  one.
+
+**Won't match:**
+- A question that's conceptually about a topic but doesn't share any words
+  with the requests in it — e.g. three Travel requests titled "Narribri",
+  "Coffs Harbour", "London" won't match "Where do I want to travel to?",
+  because none of those titles contain the word "travel" (and topic names
+  are deliberately excluded from matching — see below).
+- Paraphrases and synonyms in general — "Is dark theme available?" only
+  matches a request literally about "dark" + "theme", not one about, say,
+  "night mode".
+
+**Why topic name isn't part of the match:** several requests can share one
+topic, so if the topic word alone counted, a question merely containing
+that word would arbitrarily "win" against one of them — a false-positive
+pick when the honest answer is "here are all of them." That's exactly what
+the topic/customer lookup above is for instead.
+
+**In practice:** if you want every request under a topic rather than a
+single guessed match, just type the topic's name (or the customer's name)
+on its own.
+
+The reasoning behind this and other non-obvious choices in the app is kept
+in [docs/DESIGN.md](docs/DESIGN.md) — worth a look before "fixing" behavior
+that turns out to be deliberate.
+
 ## How it's built
 
 - **Renderer**: a single-file HTML/CSS/JS UI (`renderer/index.html`), no
