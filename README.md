@@ -53,8 +53,7 @@ questions came in, age, and due-date proximity.
   `loadAll()` and `syncAll(...)` — everything else (parsing frontmatter,
   writing files, rebuilding the index) stays in the main process.
 
-Your data lives in `~/Documents/Question Data` so you can find, back up, or
-inspect it directly, outside any app-specific hidden folder.
+(See "Running it" below for where your data actually lives on disk.)
 
 ## Running it
 
@@ -62,6 +61,23 @@ inspect it directly, outside any app-specific hidden folder.
 npm install
 npm start
 ```
+
+The first time you run it, a `Question Data` folder is created inside your
+**Documents** folder — that's where all your data actually lives (plain
+Markdown files, human-readable, nothing hidden away in an app-support
+folder), and it's seeded with a handful of example feature requests and
+questions so there's something to look at right away.
+
+That seeding only ever happens once, on that true first run. Updating the
+app's code later (a new download, a `git pull`, whatever) never touches
+`Question Data` — your real data and the app's code are entirely separate,
+so upgrading the app never risks your data. If you ever want to wipe
+everything, use the **Clear all data** button in the header — but note
+that it empties your requests and questions, it doesn't bring the
+examples back (since it's no longer a first run once real data has
+existed). To get the example data back specifically, delete the
+`Question Data` folder entirely and relaunch, which forces a genuine
+first run.
 
 `npm run demo` runs a small end-to-end proof of the backend on its own
 (seeds sample data, deletes the index, rebuilds it from the Markdown files,
