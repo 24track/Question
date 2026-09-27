@@ -7,7 +7,14 @@ const backend = require("./src/backend.cjs");
 
 // Data lives in a visible folder under Documents, not hidden app-support —
 // so a beta tester can find, back up, or inspect their own data directly.
-const DATA_DIR = path.join(os.homedir(), "Documents", "Question Data");
+//
+// QUESTION_DATA_DIR lets that folder be overridden — unset, behavior is
+// unchanged (same fixed path as always). This is groundwork for possibly
+// running separate data sets (e.g. work vs. personal) side by side later
+// (see docs/TODO.md) — nothing in the app surfaces or sets this yet.
+const DATA_DIR = process.env.QUESTION_DATA_DIR
+  ? path.resolve(process.env.QUESTION_DATA_DIR)
+  : path.join(os.homedir(), "Documents", "Question Data");
 
 function createWindow() {
   const win = new BrowserWindow({
