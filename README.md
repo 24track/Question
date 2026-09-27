@@ -5,6 +5,15 @@ customer questions in one ledger: track who's asking for what, spot
 duplicate asks before they become duplicate work, see which topics keep
 coming up, and know what to work on next.
 
+<p>
+  <img src="docs/screenshots/today-dark.png" alt="Today view, dark theme" width="49%">
+  <img src="docs/screenshots/today-light.png" alt="Today view, light theme" width="49%">
+</p>
+
+The **Today** view above: every open request ranked by a single adjustable
+priority score, blending urgency, how many customers asked, how many
+questions came in, age, and due-date proximity.
+
 ## What it does
 
 - **Today view** — a single, adjustable priority score (urgency, customer
