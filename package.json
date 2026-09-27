@@ -1,0 +1,40 @@
+{
+  "name": "question-app",
+  "version": "0.1.0",
+  "description": "A lightweight product management tool for tracking questions and feature requests.",
+  "private": true,
+  "main": "main.cjs",
+  "engines": {
+    "node": ">=22.5"
+  },
+  "scripts": {
+    "start": "electron .",
+    "demo": "node src/demo.cjs",
+    "dist": "electron-builder"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "build": {
+    "appId": "com.question-app.desktop",
+    "productName": "Question",
+    "files": [
+      "main.cjs",
+      "preload.cjs",
+      "src/**/*",
+      "renderer/**/*",
+      "!src/demo.cjs"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "mac": { "target": "dmg", "category": "public.app-category.productivity" },
+    "win": { "target": "nsis" },
+    "linux": { "target": "AppImage", "category": "Office" },
+    "publish": {
+      "provider": "github"
+    }
+  }
+}
