@@ -9,7 +9,23 @@
 
 const fs = require("fs");
 const path = require("path");
-const { DatabaseSync } = require("node:sqlite");
+
+let DatabaseSync;
+try {
+  ({ DatabaseSync } = require("node:sqlite"));
+} catch (err) {
+  // node:sqlite needs Node 22.5+. In the Electron app this is Electron's own
+  // *bundled* Node (not whatever Node the user installed system-wide) — an
+  // old pinned Electron version is the usual cause, not the user's machine.
+  throw new Error(
+    "This app needs node:sqlite, which isn't available in this Node.js runtime " +
+    "(Node 22.5 or later is required). If you're running this inside the " +
+    "Electron app, update the 'electron' dependency in package.json to a newer " +
+    "version and run 'npm install' again — Electron bundles its own Node.js, " +
+    "separate from any Node you have installed system-wide.\n" +
+    "Original error: " + err.message
+  );
+}
 
 const REQUESTS_DIR = "feature-requests";
 const QUESTIONS_DIR = "questions";
