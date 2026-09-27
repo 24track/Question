@@ -442,7 +442,18 @@
     if (!m) return [];
     return m[1].split(/,| and /).map(s=>s.trim()).filter(Boolean);
   }
-  function stem(text){ return text.toLowerCase().replace(/[^a-z0-9\s]/g," ").split(/\s+/).filter(w => w.length > 3); }
+  // Generic words that shouldn't count toward a match regardless of length —
+  // filtering by meaning (a stopword list) rather than by length alone, so a
+  // short but meaningful word (an acronym like "AGM" or "API", "UX", "QA") can
+  // still match. A pure length cutoff (the previous approach) silently threw
+  // those away along with real stopwords, making any 3-letter-or-shorter term
+  // permanently unmatchable no matter how the question was phrased.
+  const STOPWORDS = new Set(["the","a","an","is","are","was","were","be","been","being","to","of","in","on","at","by",
+    "for","with","and","or","but","not","no","do","does","did","it","its","this","that","these","those","i","you",
+    "he","she","we","they","his","her","our","your","their","as","if","so","up","out","can","will","would","should",
+    "could","may","might","must","than","then","when","what","who","whom","which","how","why","where","there","here",
+    "about","into","from","over","under","again","just","also","any","all","some","such","only","own","same","too"]);
+  function stem(text){ return text.toLowerCase().replace(/[^a-z0-9\s]/g," ").split(/\s+/).filter(w => w.length > 0 && !STOPWORDS.has(w)); }
   function overlap(wordSet, arr){ let c = 0; for (const w of arr) if (wordSet.has(w)) c++; return c; }
   function findAnswer(text){
     const words = new Set(stem(text)); let best = null, bestScore = 0;
