@@ -1,7 +1,7 @@
 # Question
 
 A lightweight desktop tool for product managers to keep feature requests and
-customer questions in one ledger: track who's asking for what, spot
+customer questions in one, low overhead system: track who's asking for what, spot
 duplicate asks before they become duplicate work, see which topics keep
 coming up, and know what to work on next.
 
