@@ -138,6 +138,39 @@ here whenever a non-obvious choice gets made, or gets questioned and kept.
 
 ## UI & renderer
 
+- **A matched question no longer counts itself automatically — the person
+  has to click "Count this ask" / "Link this question" on the Answer
+  screen.** Before the "what should I work on now?" redesign, `handleEntry()`
+  bumped `questionCount` and set `matchedRequestId` the instant a match was
+  found, with no way to undo it beyond raising a whole new request. The
+  Answer screen's match state (see handover README, "Answer cards / State
+  A") shows the request's *current* customer list and rank, and the effect
+  of counting this ask ("Its rank goes from #x to #y") as a preview *before*
+  it happens — which only makes sense if the click is the thing that
+  actually applies it. The question is still logged immediately either way
+  (nothing is lost if the tab is closed without clicking); only the link to
+  the request, the customer addition, and the `questionCount` increment
+  wait for the explicit action.
+- **Quarter is looked up the same way as customer and topic — a curated,
+  finite vocabulary, never free text.** `matchQuarterQuery()` only fires on
+  the literal words "quarter"/"quarters"/"this quarter", or a quarter value
+  that already exists on a request (e.g. "Q4", "Q3 2026", "Unscheduled").
+  Same reasoning as the existing customer/topic lookup in "Matching &
+  suggestions" above: it can't be tricked into "finding" a quarter nobody's
+  using.
+- **Quarter card order is real-quarters-first, undated-last — the opposite
+  of `knownQuarters()`'s own sort.** `knownQuarters()` sorts ascending by
+  `parseQuarterSort()`, which gives "Unscheduled" (and anything else that
+  doesn't parse as "Q<n> YYYY") a sentinel value of `-1` so it sorts first —
+  fine for that function's own purpose, wrong for a person reading a
+  quarter board, where the undated bucket reads as a trailing "everything
+  else," not the most urgent item on the page. Both the quarter answer
+  screen and the Requests screen's "group by quarter" re-partition on
+  `parseQuarterSort(k) >= 0` before sorting, rather than changing
+  `knownQuarters()` itself (other callers, like the Quarter dropdown in the
+  request modal, still want ascending-with-undated-first-or-wherever order
+  and shouldn't be affected by a UI-only display preference).
+
 - **There is no "Clear all data" button.** There used to be one — a
   permanent, always-visible, one-click, unrecoverable wipe in the main
   header. It got removed rather than hidden behind a confirmation step or a

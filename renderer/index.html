@@ -7,8 +7,16 @@
 <title>Question</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
+  /* ---------------------------------------------------------------------
+     Design tokens. Colours are unchanged from the previous version of this
+     app (see git history) — only typography and a handful of new
+     supporting tokens (body copy, row dividers, segmented-control track,
+     ochre/rust text variants, strip borders) were added for the "What
+     should I work on now?" redesign. See docs/DESIGN.md for the choices
+     this build must not casually undo, and the handover README for the
+     full spec this file implements screen-by-screen. */
   :root {
     --paper: #F5F2EA;
     --paper-raised: #FBF9F4;
@@ -24,8 +32,20 @@
     --rule: #DAD5C3;
     --rule-strong: #C7C1AC;
     --shadow: rgba(36, 38, 31, 0.08);
-    --font-display: 'Fraunces', Georgia, serif;
-    --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --shadow-modal: rgba(36, 38, 31, 0.35);
+    --body-copy: #4A4A3E;
+    --row-divider: #EAE5D6;
+    --segmented-track: #E6E1D3;
+    --ochre-text-1: #8A5A1F;
+    --ochre-text-2: #7A4E17;
+    --ochre-text-3: #5E3E12;
+    --ochre-text-4: #6B5A3A;
+    --ochre-text-5: #9A7A4A;
+    --teal-strip-border: #C9DED9;
+    --ochre-strip-border: #E6D4B8;
+    --rust-text: #8A3524;
+    --font-display: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-body: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     --font-mono: 'IBM Plex Mono', 'SF Mono', monospace;
     color-scheme: light;
   }
@@ -33,13 +53,19 @@
     :root:not([data-theme="light"]) {
       --paper: #1D1E19; --paper-raised: #262720; --ink: #EDEAE0; --ink-soft: #A8A493; --ink-faint: #736F60;
       --teal: #4FA396; --teal-soft: #24322F; --ochre: #D69A4E; --ochre-soft: #34291A; --rust: #D9765F; --rust-soft: #362320;
-      --rule: #3A3B32; --rule-strong: #4A4B40; --shadow: rgba(0, 0, 0, 0.3); color-scheme: dark;
+      --rule: #3A3B32; --rule-strong: #4A4B40; --shadow: rgba(0, 0, 0, 0.3); --shadow-modal: rgba(0,0,0,.55); color-scheme: dark;
+      --body-copy: #C7C3B2; --row-divider: #33342B; --segmented-track: #2E2F27;
+      --ochre-text-1: #E3B37B; --ochre-text-2: #D9A468; --ochre-text-3: #F0C896; --ochre-text-4: #C9AE85; --ochre-text-5: #B79868;
+      --teal-strip-border: #2E4842; --ochre-strip-border: #4A3A22; --rust-text: #E08868;
     }
   }
   :root[data-theme="dark"] {
     --paper: #1D1E19; --paper-raised: #262720; --ink: #EDEAE0; --ink-soft: #A8A493; --ink-faint: #736F60;
     --teal: #4FA396; --teal-soft: #24322F; --ochre: #D69A4E; --ochre-soft: #34291A; --rust: #D9765F; --rust-soft: #362320;
-    --rule: #3A3B32; --rule-strong: #4A4B40; --shadow: rgba(0, 0, 0, 0.3); color-scheme: dark;
+    --rule: #3A3B32; --rule-strong: #4A4B40; --shadow: rgba(0, 0, 0, 0.3); --shadow-modal: rgba(0,0,0,.55); color-scheme: dark;
+    --body-copy: #C7C3B2; --row-divider: #33342B; --segmented-track: #2E2F27;
+    --ochre-text-1: #E3B37B; --ochre-text-2: #D9A468; --ochre-text-3: #F0C896; --ochre-text-4: #C9AE85; --ochre-text-5: #B79868;
+    --teal-strip-border: #2E4842; --ochre-strip-border: #4A3A22; --rust-text: #E08868;
   }
   * { box-sizing: border-box; }
   html, body { height: 100%; margin: 0; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
@@ -47,105 +73,191 @@
   body { background: var(--paper); color: var(--ink); font-family: var(--font-body); font-size: 14px; line-height: 1.5; display: flex; flex-direction: column; overflow: hidden; }
   ::selection { background: var(--teal); color: var(--paper-raised); }
 
-  header { padding: 18px 24px 0; flex-shrink: 0; }
-  .brand-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-  .brand { font-family: var(--font-display); font-size: 26px; font-weight: 600; letter-spacing: -0.01em; }
-  .brand-tag { color: var(--ink-soft); font-size: 12.5px; margin-left: 10px; }
-  .header-meta { color: var(--ink-faint); font-size: 12.5px; font-family: var(--font-mono); }
+  /* ---------------- Global shell ---------------- */
+  header { flex-shrink: 0; display: flex; align-items: center; gap: 24px; padding: 20px 40px; border-bottom: 1px solid var(--rule); }
+  .brand { font-family: var(--font-display); font-weight: 700; font-size: 17px; letter-spacing: -0.01em; flex-shrink: 0; }
+  .ask-box { flex: 1; max-width: 560px; display: flex; align-items: center; gap: 10px; background: var(--paper-raised); border: 1px solid var(--rule-strong); border-radius: 8px; padding: 10px 14px; }
+  .ask-box.has-content, .ask-box.focused { border: 1.5px solid var(--ink); padding: 9.5px 13.5px; }
+  .ask-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--teal); flex-shrink: 0; }
+  .ask-box input { flex: 1; border: none; background: transparent; font-family: var(--font-body); font-size: 14px; color: var(--ink); padding: 0; }
+  .ask-box input:focus { outline: none; }
+  .ask-box input::placeholder { color: var(--ink-faint); }
+  .header-spacer { flex: 1; }
+  .main-nav { display: flex; align-items: center; gap: 20px; font-size: 13.5px; color: var(--ink-soft); flex-shrink: 0; }
+  .main-nav button { font-family: var(--font-body); font-size: 13.5px; color: inherit; background: none; border: none; padding: 0; cursor: pointer; }
+  .main-nav button.active { color: var(--ink); font-weight: 600; }
+  .main-nav button.ask-crumb { color: var(--ink); font-weight: 600; cursor: default; }
+  #themeSelect { font-family: var(--font-body); font-size: 11.5px; padding: 4px 6px; border-radius: 5px; border: 1px solid var(--rule-strong); background: transparent; color: var(--ink-soft); flex-shrink: 0; }
 
-  .tabs { display: flex; align-items: flex-end; gap: 2px; margin-top: 18px; overflow-x: auto; scrollbar-width: none; padding-bottom: 0; }
-  .tabs::-webkit-scrollbar { display: none; }
-  .tab { font-family: var(--font-body); font-size: 13px; font-weight: 500; color: var(--ink-soft); background: transparent; border: 1px solid var(--rule); border-bottom: none; padding: 8px 16px; border-radius: 6px 6px 0 0; cursor: pointer; white-space: nowrap; position: relative; top: 1px; transition: color 0.15s ease; }
-  .tab:hover { color: var(--ink); }
-  .tab.active { background: var(--paper-raised); color: var(--ink); border-color: var(--rule-strong); font-weight: 600; }
-  .tab.dragging { opacity: 0.45; }
-  .tab.drag-over-before { box-shadow: inset 3px 0 0 0 var(--teal); }
-  .tab.drag-over-after { box-shadow: inset -3px 0 0 0 var(--teal); }
-  .tab-add { font-family: var(--font-body); font-size: 15px; color: var(--ink-faint); background: transparent; border: 1px dashed var(--rule-strong); padding: 7px 12px; border-radius: 6px 6px 0 0; cursor: pointer; line-height: 1; }
-  .tab-add:hover { color: var(--teal); border-color: var(--teal); }
+  main { flex: 1; overflow-y: auto; }
+  .screen-empty { color: var(--ink-faint); font-size: 13px; padding: 60px 40px; text-align: center; }
 
-  main { flex: 1; overflow-y: auto; background: var(--paper-raised); border-top: 1px solid var(--rule-strong); padding: 22px 24px 32px; }
-  .view-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
-  .view-descriptor { color: var(--ink-soft); font-size: 12.5px; }
-  .view-descriptor b { color: var(--ink); font-weight: 600; }
-  .toolbar-actions { display: flex; gap: 8px; }
-  .btn { font-family: var(--font-body); font-size: 12.5px; font-weight: 600; padding: 6px 12px; border-radius: 5px; border: 1px solid var(--rule-strong); background: transparent; color: var(--ink-soft); cursor: pointer; }
-  .btn:hover { color: var(--ink); border-color: var(--ink-soft); }
-  .btn-danger:hover { color: var(--rust); border-color: var(--rust); }
-
-  table.req-table { width: 100%; border-collapse: collapse; }
-  table.req-table th { text-align: left; font-size: 11.5px; font-weight: 600; color: var(--ink-faint); padding: 0 10px 8px; border-bottom: 1px solid var(--rule); }
-  table.req-table td { padding: 12px 10px; border-bottom: 1px solid var(--rule); vertical-align: top; }
-  table.req-table tr:hover td { background: var(--teal-soft); cursor: pointer; }
-  .title-cell { font-weight: 600; max-width: 260px; }
-  .title-cell .sub { font-weight: 400; color: var(--ink-soft); font-size: 12px; margin-top: 2px; }
-  .num-cell { font-family: var(--font-mono); font-size: 12.5px; }
-
-  .chip { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 500; padding: 2px 9px; border-radius: 20px; border: 1px solid transparent; margin: 0 5px 5px 0; white-space: nowrap; }
-  .chip.urgency-high { background: var(--rust-soft); color: var(--rust); }
-  .chip.urgency-medium { background: var(--ochre-soft); color: var(--ochre); }
-  .chip.urgency-low { background: var(--teal-soft); color: var(--teal); }
-  .chip.segment { background: var(--rule); color: var(--ink-soft); }
-  .chip.topic { background: transparent; color: var(--ink-soft); border-color: var(--rule-strong); }
-  .chip.suggested { background: transparent; border: 1px dashed var(--rule-strong); color: var(--ink-faint); }
-  .chip .accept, .chip .reject { cursor: pointer; font-weight: 700; padding: 0 2px; }
-  .chip .accept:hover { color: var(--teal); }
-  .chip .reject:hover { color: var(--rust); }
+  /* ---------------- Eyebrows / small type ---------------- */
+  .eyebrow { font-family: var(--font-mono); font-size: 12.5px; letter-spacing: 0.06em; text-transform: uppercase; }
+  .mono-meta { font-family: var(--font-mono); font-size: 12px; color: var(--ink-faint); }
   .badge { font-family: var(--font-mono); font-size: 11px; color: var(--ink-soft); }
-  .status-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 6px; }
-  .status-dot.new { background: var(--ink-faint); }
-  .status-dot.planned { background: var(--ochre); }
-  .status-dot.in-progress { background: var(--teal); }
-  .status-dot.shipped { background: var(--ink); }
 
-  .board { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 12px; align-items: flex-start; }
-  .board-col { min-width: 240px; max-width: 260px; flex-shrink: 0; }
-  .board-col-head { font-size: 12.5px; font-weight: 600; color: var(--ink-soft); padding-bottom: 8px; border-bottom: 2px solid var(--rule-strong); margin-bottom: 10px; display: flex; justify-content: space-between; }
-  .board-card { background: var(--paper); border: 1px solid var(--rule); border-radius: 6px; padding: 10px 12px; margin-bottom: 10px; cursor: pointer; }
-  .board-card:hover { border-color: var(--teal); }
-  .board-card-title { font-weight: 600; font-size: 13px; margin-bottom: 6px; }
-  .board-card-meta { display: flex; gap: 10px; color: var(--ink-faint); font-family: var(--font-mono); font-size: 11px; margin-top: 6px; }
+  /* ---------------- Now screen (1a) ---------------- */
+  .now-screen { display: grid; grid-template-columns: minmax(0,1.55fr) minmax(0,1fr); min-height: 100%; }
+  .now-left { padding: 48px 48px 40px 40px; display: flex; flex-direction: column; gap: 22px; border-right: 1px solid var(--rule); }
+  .now-title { font-size: 56px; line-height: 1.02; font-weight: 600; letter-spacing: -0.03em; margin: 0; }
+  .now-reason { font-size: 20px; line-height: 1.5; color: var(--body-copy); max-width: 620px; }
+  .now-reason b { color: var(--ink); }
+  .now-reason .due-soon { color: var(--rust); font-weight: 600; }
+  .now-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .plain-chip { font-size: 13px; padding: 5px 10px; border-radius: 5px; background: var(--paper-raised); border: 1px solid var(--rule); }
+  .now-answered-card { background: var(--paper-raised); border: 1px solid var(--rule); border-radius: 8px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; max-width: 620px; }
+  .now-answered-card .label { font-size: 13px; color: var(--ink-soft); }
+  .now-answered-card .quote { font-size: 15.5px; }
+  .now-actions { margin-top: auto; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .btn-primary { font-family: var(--font-body); background: var(--ink); color: var(--paper); font-weight: 600; font-size: 14px; padding: 11px 18px; border-radius: 7px; border: none; cursor: pointer; }
+  .btn-secondary { font-family: var(--font-body); border: 1px solid var(--rule-strong); background: transparent; color: var(--body-copy); font-weight: 600; font-size: 14px; padding: 11px 18px; border-radius: 7px; cursor: pointer; }
+  .btn-link { font-family: var(--font-body); background: none; border: none; font-size: 14px; padding: 11px 8px; color: var(--ink-soft); cursor: pointer; }
+  .btn-teal { font-family: var(--font-body); background: var(--teal); color: var(--paper-raised); font-weight: 600; font-size: 14px; padding: 10px 16px; border-radius: 7px; border: none; cursor: pointer; white-space: nowrap; }
+  .btn-ochre { font-family: var(--font-body); background: var(--ochre); color: var(--paper-raised); font-weight: 600; font-size: 14px; padding: 10px 16px; border-radius: 7px; border: none; cursor: pointer; white-space: nowrap; }
 
-  .gallery-group { margin-bottom: 26px; }
-  .gallery-group-head { font-family: var(--font-display); font-size: 17px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: baseline; gap: 10px; }
-  .gallery-group-head .heat { font-family: var(--font-mono); font-size: 12px; color: var(--ochre); font-weight: 500; }
-  .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
-  .gallery-card { background: var(--paper); border: 1px solid var(--rule); border-radius: 6px; padding: 14px; cursor: pointer; }
-  .gallery-card:hover { border-color: var(--teal); }
-  .gallery-card-title { font-weight: 600; font-size: 13.5px; margin-bottom: 8px; }
-  .gallery-card-meta { display: flex; gap: 12px; margin-top: 10px; color: var(--ink-soft); font-family: var(--font-mono); font-size: 11px; }
+  .now-right { padding: 48px 40px 40px; background: var(--paper-raised); display: flex; flex-direction: column; gap: 28px; }
+  .then-list { display: flex; flex-direction: column; gap: 4px; }
+  .then-row { display: flex; gap: 14px; padding: 12px 0; border-top: 1px solid var(--rule); }
+  .then-list .then-row:last-child { border-bottom: 1px solid var(--rule); }
+  .then-rank { font-family: var(--font-mono); font-size: 13px; color: var(--ink-faint); padding-top: 2px; }
+  .then-title { font-weight: 600; font-size: 15.5px; cursor: pointer; }
+  .then-title:hover { text-decoration: underline; }
+  .then-reason { font-size: 13.5px; color: var(--ink-soft); }
 
-  .empty-state { color: var(--ink-faint); font-size: 13px; padding: 40px 10px; text-align: center; border: 1px dashed var(--rule); border-radius: 6px; }
+  .theme-card { border: 1px dashed var(--ochre); background: var(--ochre-soft); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+  .theme-card .theme-title { font-weight: 600; font-size: 15.5px; }
+  .theme-card .theme-sub { font-size: 13.5px; color: var(--ochre-text-4); }
+  .theme-cta { font-size: 13.5px; font-weight: 600; color: var(--ochre-text-1); background: none; border: none; padding: 0; margin-top: 4px; cursor: pointer; text-align: left; display: block; }
 
-  #feedResizeHandle { flex-shrink: 0; height: 9px; margin-top: -1px; cursor: row-resize; position: relative; background: transparent; touch-action: none; }
-  #feedResizeHandle::after { content: ""; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 44px; height: 3px; border-radius: 2px; background: var(--rule-strong); transition: background 0.15s ease; }
-  #feedResizeHandle:hover::after, #feedResizeHandle.dragging::after { background: var(--teal); }
-  .composer-wrap { flex-shrink: 0; background: var(--paper); border-top: 1px solid var(--rule-strong); padding: 12px 24px calc(14px + env(safe-area-inset-bottom, 0px)); }
-  #resumeDraftBar { display: none; font-size: 12px; color: var(--ink-soft); margin-bottom: 8px; padding: 6px 10px; border: 1px dashed var(--rule-strong); border-radius: 6px; }
-  #resumeDraftBar.show { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-  #resumeDraftBar button { font-family: var(--font-body); font-size: 11.5px; font-weight: 600; border: 1px solid var(--rule-strong); border-radius: 5px; background: transparent; color: var(--ink); padding: 3px 10px; cursor: pointer; }
-  #feed { max-height: var(--feed-height, 30vh); overflow-y: auto; margin-bottom: 10px; display: flex; flex-direction: column; gap: 8px; }
-  .feed-empty { color: var(--ink-faint); font-size: 12.5px; padding: 4px 2px; }
-  .feed-item { max-width: 640px; font-size: 13px; }
-  .feed-q { background: var(--rule); color: var(--ink); display: inline-block; padding: 7px 12px; border-radius: 10px 10px 10px 2px; }
-  .feed-a { margin-top: 5px; padding: 9px 12px; border-radius: 10px 10px 10px 2px; display: block; }
-  .feed-a.answered { background: var(--teal-soft); color: var(--teal); }
-  .feed-a.unanswered { background: var(--ochre-soft); color: var(--ochre); }
-  .feed-a.created { background: var(--teal-soft); color: var(--teal); }
-  /* .src marks any inline link-like span that opens a request (feed answers,
-     Trends panels, entity lookups) — cursor and hover feedback apply wherever
-     it's used, not just inside the composer feed. */
-  .src { cursor: pointer; }
-  .src:hover { text-decoration: underline; }
-  .feed-a .src { display: block; margin-top: 4px; font-size: 11.5px; opacity: 0.8; }
-  .feed-a button { margin-top: 8px; font-family: var(--font-body); font-size: 12px; font-weight: 600; padding: 5px 11px; border-radius: 5px; border: 1px solid currentColor; background: transparent; color: inherit; cursor: pointer; }
-  form#composer { display: flex; gap: 10px; align-items: center; }
-  #composer input[type=text] { flex: 1; font-family: var(--font-body); font-size: 14px; padding: 11px 14px; border-radius: 8px; border: 1px solid var(--rule-strong); background: var(--paper-raised); color: var(--ink); }
-  #composer input[type=text]:focus { outline: 2px solid var(--teal); outline-offset: 1px; }
-  #composer input[type=text]::placeholder { color: var(--ink-faint); }
-  #composer button { font-family: var(--font-body); font-weight: 600; font-size: 13.5px; padding: 11px 18px; border-radius: 8px; border: none; background: var(--ink); color: var(--paper); cursor: pointer; }
-  .composer-hint { font-size: 11px; color: var(--ink-faint); margin-top: 6px; }
+  /* ---------------- Answer screen (1b / 2a) ---------------- */
+  .answer-screen { display: flex; flex-direction: column; align-items: center; padding: 36px 40px 60px; }
+  .answer-col { width: 100%; max-width: 760px; display: flex; flex-direction: column; gap: 22px; }
+  .answer-echo-wrap { display: flex; flex-direction: column; gap: 8px; }
+  .answer-echo { display: flex; align-items: center; gap: 12px; background: var(--paper-raised); border: 1.5px solid var(--ink); border-radius: 10px; padding: 16px 18px; }
+  .answer-echo .q-text { flex: 1; font-size: 19px; }
+  .answer-echo .who-chip { font-family: var(--font-mono); font-size: 12px; color: var(--ink-faint); border: 1px solid var(--rule); border-radius: 4px; padding: 3px 7px; white-space: nowrap; }
+  .answer-helper { font-size: 12.5px; color: var(--ink-faint); padding-left: 4px; }
+  .answer-headline { font-size: 26px; font-weight: 600; letter-spacing: -0.02em; margin: 0; }
+  .answer-card { background: var(--paper-raised); border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; }
+  .answer-card-body { padding: 20px 22px; display: flex; flex-direction: column; gap: 10px; }
+  .answer-card-body .row-between { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; }
+  .answer-card-body .title { font-size: 20px; font-weight: 600; }
+  .answer-card-body .desc { font-size: 15px; color: var(--body-copy); }
+  .answer-strip { display: flex; align-items: center; gap: 16px; padding: 16px 22px; }
+  .answer-strip.teal { background: var(--teal-soft); border-top: 1px solid var(--teal-strip-border); color: var(--teal); }
+  .answer-strip.ochre { background: var(--ochre-soft); border-top: 1px solid var(--ochre-strip-border); color: var(--ochre-text-2); }
+  .answer-strip .strip-text { flex: 1; font-size: 14.5px; }
+  .answer-similar-list { padding: 18px 22px; display: flex; flex-direction: column; gap: 12px; }
+  .answer-similar-list .label { font-size: 13px; color: var(--ink-soft); }
+  .answer-similar-row { display: flex; justify-content: space-between; gap: 16px; font-size: 15px; }
+  .first-ask-body { padding: 20px 22px; display: flex; flex-direction: column; gap: 14px; }
+  .first-ask-body p { margin: 0; font-size: 15.5px; line-height: 1.55; color: var(--body-copy); }
+  .not-what-meant { font-size: 14px; color: var(--ink-soft); }
+  .not-what-meant a, .src { color: var(--teal); cursor: pointer; }
+  .not-what-meant a:hover, .src:hover { text-decoration: underline; }
 
+  .earlier-today { display: flex; flex-direction: column; margin-top: 10px; }
+  .earlier-today .label { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); padding-bottom: 8px; }
+  .earlier-row { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-top: 1px solid var(--rule); font-size: 14px; }
+  .earlier-row .q { color: var(--body-copy); }
+  .earlier-row .result { color: var(--ink-soft); }
+  .earlier-row .result.linked { color: var(--teal); cursor: pointer; }
+  .earlier-row .result.linked:hover { text-decoration: underline; }
+
+  /* ---------------- Quarter / entity list answer (2a) ---------------- */
+  .list-answer-header { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; flex-wrap: wrap; padding: 40px 40px 0; }
+  .list-answer-title { font-size: 30px; font-weight: 600; letter-spacing: -0.02em; margin: 0; }
+  .list-answer-actions { display: flex; gap: 10px; }
+  .list-answer-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 20px; align-items: start; padding: 24px 40px; }
+  .lookup-card { background: var(--paper-raised); border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; }
+  .lookup-card.dashed { border: 1px dashed var(--rule-strong); }
+  .lookup-card-head { padding: 16px 20px; border-bottom: 1px solid var(--rule); display: flex; justify-content: space-between; align-items: baseline; }
+  .lookup-card.dashed .lookup-card-head { border-bottom-style: dashed; }
+  .lookup-card-head .h-title { font-size: 18px; font-weight: 600; }
+  .lookup-card-head .h-title.muted { color: var(--ink-soft); }
+  .lookup-card-head .h-meta { font-size: 13px; color: var(--ink-soft); }
+  .lookup-card-head .h-meta.warn { color: var(--rust); font-weight: 500; }
+  .lookup-card-head .h-meta.faint { color: var(--ink-faint); }
+  .lookup-row { padding: 16px 20px; display: flex; flex-direction: column; gap: 4px; border-bottom: 1px solid var(--row-divider); cursor: pointer; }
+  .lookup-row:last-of-type { border-bottom: none; }
+  .lookup-row:hover { background: var(--teal-soft); }
+  .lookup-row .r-title { font-weight: 600; font-size: 15px; }
+  .lookup-row .r-sub { font-size: 13px; }
+  .lookup-card-footer { padding: 12px 20px; background: var(--rust-soft); font-size: 13px; color: var(--rust); }
+  .other-ways { padding: 0 40px 32px; display: flex; flex-direction: column; gap: 8px; max-width: 760px; margin-top: auto; }
+  .other-ways .label { font-size: 13px; color: var(--ink-soft); }
+  .other-ways-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .other-ways-chips button { font-family: var(--font-body); font-size: 13.5px; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--rule); background: var(--paper-raised); color: var(--ink); cursor: pointer; }
+  .other-ways-chips button:hover { border-color: var(--teal); }
+  .list-answer-screen { display: flex; flex-direction: column; min-height: 100%; }
+
+  /* ---------------- Requests screen (2b) ---------------- */
+  .requests-toolbar { display: flex; align-items: center; gap: 28px; flex-wrap: wrap; padding: 24px 40px 18px; }
+  .requests-title { font-size: 26px; font-weight: 600; letter-spacing: -0.02em; margin-right: 8px; }
+  .control-group { display: flex; align-items: center; gap: 10px; }
+  .control-label { font-size: 13px; color: var(--ink-soft); }
+  .segmented { display: flex; gap: 3px; background: var(--segmented-track); padding: 3px; border-radius: 7px; }
+  .segmented button { font-family: var(--font-body); font-size: 13px; padding: 5px 11px; border-radius: 5px; cursor: pointer; font-weight: 500; background: transparent; border: none; color: var(--ink-soft); }
+  .segmented button.active { background: var(--paper-raised); color: var(--ink); }
+  .req-toolbar-spacer { flex: 1; }
+  select.plain-select { font-family: var(--font-body); font-size: 13px; color: var(--ink-soft); border: 1px solid var(--rule-strong); border-radius: 6px; padding: 6px 10px; background: var(--paper); }
+  .new-request-link { font-family: var(--font-body); font-size: 13px; color: var(--teal); font-weight: 600; background: none; border: none; cursor: pointer; }
+  .views-menu { position: relative; }
+  .views-menu-btn { font-family: var(--font-body); font-size: 13px; color: var(--ink-soft); background: none; border: none; cursor: pointer; }
+  .views-menu-list { display: none; position: absolute; right: 0; top: 100%; margin-top: 6px; background: var(--paper-raised); border: 1px solid var(--rule-strong); border-radius: 8px; box-shadow: 0 12px 30px var(--shadow); min-width: 200px; z-index: 20; padding: 6px; }
+  .views-menu-list.open { display: block; }
+  .views-menu-list button { display: flex; justify-content: space-between; gap: 8px; width: 100%; text-align: left; font-family: var(--font-body); font-size: 13px; padding: 7px 8px; border-radius: 5px; border: none; background: none; color: var(--ink); cursor: pointer; }
+  .views-menu-list button:hover { background: var(--teal-soft); }
+  .views-menu-list .del { color: var(--ink-faint); font-weight: 700; }
+  .views-menu-list .del:hover { color: var(--rust); }
+  .views-menu-list hr { border: none; border-top: 1px solid var(--rule); margin: 4px 0; }
+
+  .ledger-legend { display: flex; gap: 16px; font-size: 12.5px; color: var(--body-copy); padding: 0 40px 10px; }
+  .ledger-legend .item { display: flex; align-items: center; gap: 6px; }
+  .ledger-legend .swatch { width: 10px; height: 10px; border-radius: 2px; }
+
+  .req-groups { padding: 0 40px 32px; display: flex; flex-direction: column; gap: 22px; }
+  .req-group-head { display: flex; align-items: baseline; gap: 12px; padding: 6px 0 10px; border-bottom: 1.5px solid var(--ink); }
+  .req-group-head .g-name { font-size: 17px; font-weight: 600; }
+  .req-group-head .g-meta { font-size: 13px; }
+  .req-row { display: grid; grid-template-columns: 320px minmax(0,1fr) 120px; gap: 24px; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--rule); cursor: pointer; }
+  .req-row:hover { background: var(--teal-soft); }
+  .req-row .r-main .r-title { font-weight: 600; font-size: 15.5px; }
+  .req-row .r-main .r-customers { font-size: 13px; color: var(--ink-soft); margin-top: 3px; }
+  .req-row .r-list-cols { display: flex; gap: 28px; align-items: center; font-size: 13.5px; color: var(--ink-soft); }
+  .req-row .r-list-cols .col-status { width: 110px; font-weight: 500; }
+  .req-row .r-list-cols .col-urgency { width: 90px; }
+  .req-row .r-list-cols .col-topic { width: 120px; }
+  .req-row .r-ledger-bar { display: flex; height: 20px; gap: 2px; max-width: 320px; }
+  .req-row .r-ledger-bar .seg { border-radius: 2px; }
+  .req-row .r-due { font-size: 13px; text-align: right; font-weight: 500; color: var(--ink-soft); }
+  .req-row .r-due.soon { color: var(--rust); }
+
+  /* ---------------- Trends (3a) ---------------- */
+  .trends-screen { padding: 24px 40px 40px; }
+  .trends-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 20px; }
+  .trends-title { font-size: 26px; font-weight: 600; margin: 0; }
+  .trends-grid { display: grid; grid-template-columns: minmax(0,1.15fr) minmax(0,1fr); gap: 28px; }
+  .trends-col { display: flex; flex-direction: column; gap: 14px; }
+  .trends-eyebrow-row { display: flex; align-items: baseline; gap: 10px; }
+  .trends-footnote { font-size: 13px; color: var(--ink-faint); line-height: 1.5; }
+  .pile-up-row { display: grid; grid-template-columns: 200px minmax(0,1fr) 28px; gap: 6px 14px; align-items: center; font-size: 14px; }
+  .pile-up-row .name { font-weight: 500; }
+  .pile-up-row .name .shipped-tag { font-size: 12px; color: var(--teal); font-weight: 600; margin-left: 6px; }
+  .pile-up-row .bar { height: 12px; border-radius: 2px; }
+  .pile-up-row .count { font-family: var(--font-mono); font-size: 12.5px; text-align: right; }
+  .pile-up-callout { background: var(--rust-soft); border-radius: 8px; padding: 12px 14px; font-size: 13.5px; color: var(--rust-text); line-height: 1.5; }
+  .side-lists { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .side-list { display: flex; flex-direction: column; gap: 8px; }
+  .side-list-head { font-family: var(--font-mono); font-size: 12.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-soft); }
+  .side-list-row { display: flex; justify-content: space-between; font-size: 14px; padding: 7px 0; border-top: 1px solid var(--rule); cursor: pointer; }
+  .side-list-row:last-of-type { border-bottom: 1px solid var(--rule); }
+  .side-list-row .count { color: var(--ink-soft); }
+  .side-list-row:hover { background: var(--teal-soft); }
+  .side-list-caption { font-size: 12.5px; color: var(--ink-faint); }
+
+  /* ---------------- Overlays / modals ---------------- */
   .overlay { position: fixed; inset: 0; background: rgba(20, 21, 16, 0.45); display: none; align-items: flex-start; justify-content: center; padding: 40px 16px; overflow-y: auto; z-index: 50; }
   .overlay.open { display: flex; }
   .modal { position: relative; background: var(--paper); border-radius: 10px; border: 1px solid var(--rule-strong); width: 100%; max-width: 560px; padding: 22px 24px 24px; box-shadow: 0 12px 40px var(--shadow); }
@@ -158,86 +270,102 @@
   .field-row { display: flex; gap: 12px; }
   .field-row .field { flex: 1; }
   .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
-  .btn-primary { background: var(--ink); color: var(--paper); border: none; font-weight: 600; font-size: 13px; padding: 9px 16px; border-radius: 6px; cursor: pointer; }
-  .btn-secondary { background: transparent; color: var(--ink-soft); border: 1px solid var(--rule-strong); font-weight: 600; font-size: 13px; padding: 9px 16px; border-radius: 6px; cursor: pointer; }
   .close-x { position: absolute; top: 18px; right: 20px; background: none; border: none; font-size: 18px; color: var(--ink-faint); cursor: pointer; }
-  .detail-section { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--rule); }
-  .detail-section h3 { font-size: 12px; font-weight: 600; color: var(--ink-soft); margin: 0 0 8px; }
+  .chip { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 500; padding: 2px 9px; border-radius: 20px; border: 1px solid transparent; margin: 0 5px 5px 0; white-space: nowrap; }
+  .chip.urgency-high { background: var(--rust-soft); color: var(--rust); }
+  .chip.urgency-medium { background: var(--ochre-soft); color: var(--ochre); }
+  .chip.urgency-low { background: var(--teal-soft); color: var(--teal); }
+  .chip.segment { background: var(--rule); color: var(--ink-soft); }
+  .chip.topic { background: transparent; color: var(--ink-soft); border-color: var(--rule-strong); }
+  .chip.suggested { background: transparent; border: 1px dashed var(--rule-strong); color: var(--ink-faint); }
+  .chip .accept, .chip .reject { cursor: pointer; font-weight: 700; padding: 0 2px; }
+  .chip .accept:hover { color: var(--teal); }
+  .chip .reject:hover { color: var(--rust); }
+  .btn { font-family: var(--font-body); font-size: 12.5px; font-weight: 600; padding: 6px 12px; border-radius: 5px; border: 1px solid var(--rule-strong); background: transparent; color: var(--ink-soft); cursor: pointer; }
+  .btn:hover { color: var(--ink); border-color: var(--ink-soft); }
+  .btn-danger:hover { color: var(--rust); border-color: var(--rust); }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+  .status-dot.new { background: var(--ink-faint); }
+  .status-dot.planned { background: var(--ochre); }
+  .status-dot.in-progress { background: var(--teal); }
+  .status-dot.shipped { background: var(--ink); }
   .qlink { font-size: 12.5px; padding: 6px 0; border-bottom: 1px dotted var(--rule); }
   .qlink:last-child { border-bottom: none; }
+  .detail-section { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--rule); }
+  .detail-section h3 { font-size: 12px; font-weight: 600; color: var(--ink-soft); margin: 0 0 8px; }
 
+  /* ---------------- Request modal (3b), two-pane ---------------- */
+  #detailOverlay .modal.req-modal { max-width: 1000px; padding: 0; display: flex; flex-direction: column; border-radius: 12px; box-shadow: 0 30px 80px var(--shadow-modal); }
+  .req-modal-panes { display: flex; flex: 1; min-height: 0; }
+  .req-modal-left { flex: 1; padding: 32px 36px; display: flex; flex-direction: column; gap: 24px; overflow-y: auto; max-height: 640px; }
+  .req-modal-left .rank-eyebrow { color: var(--teal); }
+  .req-modal-left .req-title-input { font-family: var(--font-display); font-size: 30px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.15; border: none; background: transparent; padding: 0; width: 100%; color: var(--ink); }
+  .req-modal-left .req-desc-input { font-family: var(--font-body); font-size: 15px; color: var(--body-copy); border: none; background: transparent; padding: 0; width: 100%; resize: vertical; min-height: 24px; }
+  .rank-why-row { display: flex; justify-content: space-between; align-items: baseline; }
+  .rank-why-row .lbl { font-size: 13px; font-weight: 600; color: var(--ink-soft); }
+  .rank-why-row .adjust-link { font-size: 13px; color: var(--teal); font-weight: 600; background: none; border: none; cursor: pointer; padding: 0; }
+  .score-bar { display: flex; height: 14px; gap: 2px; }
+  .score-bar .seg { border-radius: 2px; }
+  .score-parts-grid { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 10px; font-size: 13px; }
+  .score-parts-grid .part-name { font-weight: 600; }
+  .score-parts-grid .part-val { font-family: var(--font-mono); font-size: 12px; color: var(--ink-soft); }
+  .req-modal-left .section-label { font-size: 13px; font-weight: 600; color: var(--ink-soft); }
+  .cust-chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .cust-chip { font-size: 13.5px; padding: 5px 10px; border-radius: 5px; background: var(--paper-raised); border: 1px solid var(--rule); display: inline-flex; align-items: center; gap: 6px; }
+  .cust-chip .x { cursor: pointer; opacity: 0.6; }
+  .cust-chip .x:hover { opacity: 1; color: var(--rust); }
+  .cust-chip-add { font-size: 13.5px; padding: 5px 10px; border-radius: 5px; border: 1px dashed var(--rule-strong); color: var(--ink-soft); cursor: pointer; background: none; }
+  .cust-add-input { display: none; font-size: 13px; padding: 5px 8px; border-radius: 5px; border: 1px solid var(--rule-strong); }
+  .linked-q-row { display: flex; justify-content: space-between; gap: 16px; padding: 9px 0; border-top: 1px solid var(--rule); font-size: 14px; }
+  .linked-q-row .meta { font-family: var(--font-mono); font-size: 12px; color: var(--ink-faint); white-space: nowrap; }
+  .show-more-link { padding: 9px 0; border-top: 1px solid var(--rule); font-size: 13.5px; color: var(--teal); font-weight: 600; cursor: pointer; background: none; border-left: none; border-right: none; border-bottom: none; text-align: left; }
+
+  .req-modal-right { width: 300px; flex-shrink: 0; background: var(--paper-raised); border-left: 1px solid var(--rule); padding: 32px 24px; display: flex; flex-direction: column; gap: 4px; }
+  .req-modal-right .close-row { display: flex; justify-content: flex-end; margin-bottom: 8px; }
+  .prop-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--row-divider); position: relative; }
+  .prop-row .p-label { font-size: 13px; color: var(--ink-soft); }
+  .prop-row .p-value { font-size: 14px; font-weight: 500; }
+  .prop-row .p-value.mono { font-family: var(--font-mono); }
+  .prop-row select.prop-select { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .req-modal-right .spacer { flex: 1; }
+  .req-modal-right .ship-caption { font-size: 12.5px; color: var(--ink-faint); text-align: center; padding-top: 8px; line-height: 1.45; }
+  .req-modal-footer { display: flex; justify-content: space-between; align-items: center; padding: 14px 36px; border-top: 1px solid var(--rule); }
+  .req-modal-footer .delete-link { font-size: 13.5px; color: var(--rust); background: none; border: none; cursor: pointer; padding: 0; }
+  .add-new-inline { display: none; margin-top: 6px; }
+
+  @media (max-width: 900px) {
+    .now-screen { grid-template-columns: 1fr; }
+    .now-left { border-right: none; border-bottom: 1px solid var(--rule); }
+    .list-answer-grid { grid-template-columns: 1fr; }
+    .req-modal-panes { flex-direction: column; }
+    .req-modal-right { width: 100%; border-left: none; border-top: 1px solid var(--rule); }
+  }
   @media (max-width: 640px) {
-    header, main, .composer-wrap { padding-left: 14px; padding-right: 14px; }
+    header { padding: 14px; flex-wrap: wrap; }
+    .ask-box { order: 3; max-width: none; width: 100%; }
     .field-row { flex-direction: column; }
+    .req-row { grid-template-columns: 1fr; gap: 8px; }
   }
 </style>
 </head>
 <body>
 
 <header>
-  <div class="brand-row">
-    <div><span class="brand">Question</span></div>
-    <div style="display:flex;align-items:center;gap:12px;">
-      <div class="header-meta" id="headerMeta"></div>
-      <select id="themeSelect" title="Theme" style="font-family:var(--font-body);font-size:11.5px;padding:4px 6px;border-radius:5px;border:1px solid var(--rule-strong);background:transparent;color:var(--ink-soft);">
-        <option value="system">System theme</option>
-        <option value="light">Light</option>
-        <option value="dark">Dark</option>
-      </select>
-    </div>
+  <div class="brand">Question</div>
+  <div class="ask-box" id="askBox">
+    <span class="ask-dot"></span>
+    <input type="text" id="askInput" placeholder="Ask what customers want, or what's worth doing…" autocomplete="off">
   </div>
-  <div class="tabs" id="tabs"></div>
+  <div class="header-spacer"></div>
+  <nav class="main-nav" id="mainNav"></nav>
+  <select id="themeSelect" title="Theme">
+    <option value="system">System theme</option>
+    <option value="light">Light</option>
+    <option value="dark">Dark</option>
+  </select>
 </header>
 
 <main id="main"></main>
-
-<div id="feedResizeHandle" title="Drag to resize the conversation panel"></div>
-
-<div class="composer-wrap">
-  <div id="resumeDraftBar"><span id="resumeDraftLabel"></span><button id="resumeDraftBtn">Continue draft</button></div>
-  <div id="feed"></div>
-  <form id="composer" autocomplete="off">
-    <input type="text" id="composerInput" placeholder="Ask a question, or type “Raise a feature request for …”" />
-    <button type="submit">Ask</button>
-  </form>
-  <div class="composer-hint">Answers only come from requests and questions already logged here — nothing is invented.</div>
-</div>
-
-<div class="overlay" id="viewOverlay">
-  <div class="modal">
-    <button class="close-x" data-close="viewOverlay">&#10005;</button>
-    <h2>New view</h2>
-    <div class="modal-sub">Pick how you want to look at feature requests. You can add as many as you like.</div>
-    <div class="field"><label for="vName">View name</label><input type="text" id="vName" placeholder="e.g. Enterprise asks" /></div>
-    <div class="field-row">
-      <div class="field"><label for="vLayout">Layout</label>
-        <select id="vLayout"><option value="table">Table</option><option value="board">Board</option><option value="gallery">Gallery</option></select>
-      </div>
-      <div class="field"><label for="vGroup">Group by</label>
-        <select id="vGroup"><option value="none">No grouping</option><option value="status">Status</option><option value="urgency">Urgency</option><option value="topic">Topic</option><option value="quarter">Quarter</option></select>
-      </div>
-    </div>
-    <div class="field-row">
-      <div class="field"><label for="vSort">Sort by</label>
-        <select id="vSort"><option value="score">Priority score</option><option value="customers">Customer count</option><option value="questions">Question count</option><option value="age">Age (oldest first)</option><option value="updated">Last updated</option><option value="dueDate">Due date</option><option value="urgency">Urgency</option><option value="title">Title (A–Z)</option></select>
-      </div>
-      <div class="field"><label for="vDir">Direction</label>
-        <select id="vDir"><option value="desc">Descending</option><option value="asc">Ascending</option></select>
-      </div>
-    </div>
-    <div class="field"><label for="vShipped">Shipped requests</label>
-      <select id="vShipped">
-        <option value="all">Show alongside everything else</option>
-        <option value="hide">Hide from this view</option>
-        <option value="only">Show only shipped requests</option>
-      </select>
-    </div>
-    <div class="modal-actions">
-      <button class="btn-secondary" data-close="viewOverlay">Cancel</button>
-      <button class="btn-primary" id="saveView">Add view</button>
-    </div>
-  </div>
-</div>
 
 <div class="overlay" id="draftOverlay">
   <div class="modal">
@@ -255,72 +383,65 @@
   </div>
 </div>
 
+<div class="overlay" id="viewOverlay">
+  <div class="modal">
+    <button class="close-x" data-close="viewOverlay">&#10005;</button>
+    <h2>Save this view</h2>
+    <div class="modal-sub">Saves the current Group by / Layout / Shipped settings so you can come back to them.</div>
+    <div class="field"><label for="vName">Name</label><input type="text" id="vName" placeholder="e.g. Enterprise asks" /></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" data-close="viewOverlay">Cancel</button>
+      <button class="btn-primary" id="saveView">Save view</button>
+    </div>
+  </div>
+</div>
+
 <div class="overlay" id="detailOverlay"><div class="modal" id="detailModal"></div></div>
 
 <script>
 (async function(){
   "use strict";
 
-  // Persistence goes through the real backend now (markdown+frontmatter
-  // files plus a disposable SQLite index — see src/backend.cjs), reached
-  // only via the two calls preload.cjs exposes on window.questionAPI. Chat
-  // feed history stays in-memory only, same documented limitation as before
-  // (it resets on app restart) — everything else round-trips to disk.
+  // Persistence goes through the real backend (markdown+frontmatter files
+  // plus a disposable SQLite index — see src/backend.cjs), reached only via
+  // the two calls preload.cjs exposes on window.questionAPI. The chat/answer
+  // history (state.feed) stays in-memory only, same documented limitation
+  // as before (resets on app restart) — everything else round-trips to disk.
   async function loadState(){
     const { requests, questions, settings, everSeeded } = await window.questionAPI.loadAll();
-    // No data and no settings means the visible data folder is empty — either
-    // because this is the true first run (never seeded before, anywhere on
-    // this machine: see backend.cjs's hasEverLaunched()), in which case the
-    // caller falls back to seed() below, or because the folder was deleted
-    // later on to reset the app, in which case it should come back empty,
-    // not reseeded with the examples a second time — see blankState().
     if (requests.length === 0 && questions.length === 0 && !settings){
       return everSeeded ? blankState() : null;
     }
     return {
       requests, questions,
       views: (settings && settings.views) || defaultViews(),
-      activeView: (settings && settings.activeView) || null,
+      requestsControls: (settings && settings.requestsControls) || defaultRequestsControls(),
       scoreWeights: (settings && settings.scoreWeights) || defaultScoreWeights(),
       theme: (settings && settings.theme) || "system",
-      feedHeightPx: (settings && settings.feedHeightPx) || null,
+      activeScreen: "now",
+      currentAnswer: null,
       feed: [],
     };
   }
-  // Fire-and-forget by design: every call site in this file treats saveState()
-  // as instantaneous and synchronous-looking (it always has, back to the
-  // localStorage version), so this keeps that contract and just logs instead
-  // of throwing if a write fails — a failed save should never crash the UI.
   function saveState(){
     window.questionAPI.syncAll({
       requests: state.requests, questions: state.questions,
-      settings: { views: state.views, activeView: state.activeView, scoreWeights: state.scoreWeights, theme: state.theme, feedHeightPx: state.feedHeightPx },
+      settings: { views: state.views, requestsControls: state.requestsControls, scoreWeights: state.scoreWeights, theme: state.theme },
     }).catch(err => console.error("Failed to save:", err));
   }
 
   const URGENCY_RANK = { high: 3, medium: 2, low: 1 };
   const STATUS_ORDER = ["new", "planned", "in-progress", "shipped"];
   const STATUS_LABEL = { "new": "New", "planned": "Planned", "in-progress": "In progress", "shipped": "Shipped" };
-  // Status can hold a custom value added via "+ Add new" (see wireAddableSelect),
-  // which has no entry in STATUS_LABEL — every display of a status must fall
-  // back to the raw value itself rather than showing "undefined".
+  const STATUS_COLOR_VAR = { "new": "--ink-soft", "planned": "--ochre", "in-progress": "--teal", "shipped": "--ink-soft" };
+  function statusColor(s){ return "var(" + (STATUS_COLOR_VAR[s] || "--ink-soft") + ")"; }
   function statusLabel(s){ return STATUS_LABEL[s] || (s ? s.charAt(0).toUpperCase()+s.slice(1) : s); }
-  // Whether a request is shipped is derived from `status` alone — there is no
-  // separate stored boolean. (There used to be one, `r.shipped`, set only by
-  // the dedicated "Mark as shipped" button; the generic Status dropdown could
-  // set status to "shipped" without touching it, letting the two drift apart.
-  // See docs/DESIGN.md.)
   function isShipped(r){ return r.status === "shipped"; }
-  // Custom statuses (added via "+ Add new") are the only ones that can go
-  // stale or get typo'd — the four built-ins are fixed because other logic
-  // (the shipped flag, status-dot colors, board ordering) keys off them by name.
   function customStatuses(){
     const set = new Set();
     state.requests.forEach(r => { if (r.status && !STATUS_ORDER.includes(r.status)) set.add(r.status); });
     return Array.from(set).sort();
   }
-  // Topic has no built-in presets at all (unlike status) — every value in use
-  // is "custom", so this is just knownValuesFor("topic") minus the plumbing.
   function customTopics(){
     const set = new Set();
     state.requests.forEach(r => { if (r.topic) set.add(r.topic); });
@@ -330,170 +451,144 @@
   function uid(prefix){ return prefix + "_" + Math.random().toString(36).slice(2,9); }
   function daysAgo(n){ return Date.now() - n*86400000; }
 
-  // Shared by seed() (first run) and loadState() (real data present but no
-  // settings.json yet — e.g. markdown files copied in by hand) so both paths
-  // land on identical defaults rather than two copies drifting apart.
+  // Requests-screen controls (Group by / Layout / Shipped filter) replace the
+  // old tab strip of saved "views" — see docs handover README, "Requests
+  // (2b)". state.views is kept around only as named presets of these three
+  // controls (a small "Views ▾" menu), migrated from the old tab set below.
+  function defaultRequestsControls(){ return { group: "quarter", layout: "list", shippedFilter: "hide" }; }
   function defaultViews(){
+    // Migration table from the handover README: All requests -> None/List/all,
+    // By urgency -> Urgency, Topic heat -> Topic, By quarter -> Quarter,
+    // Shipped -> shipped only. "Today" is gone (it's the Now screen now).
     return [
-      // Today and By urgency are working views — what to do next — so
-      // shipped requests (permanently "done") default to hidden in both;
-      // otherwise a completed item with a past due date only climbs the
-      // priority score over time instead of dropping out of the way. All
-      // requests / Topic heat / By quarter default to showing everything,
-      // since those are read as comprehensive/historical views on purpose.
-      { id: uid("v"), name: "Today", layout: "table", group: "none", sort: "score", dir: "desc", shippedFilter: "hide", builtin: true },
-      { id: uid("v"), name: "All requests", layout: "table", group: "none", sort: "age", dir: "asc", shippedFilter: "all", builtin: true },
-      { id: uid("v"), name: "By urgency", layout: "board", group: "urgency", sort: "customers", dir: "desc", shippedFilter: "hide", builtin: true },
-      { id: uid("v"), name: "Topic heat", layout: "gallery", group: "topic", sort: "questions", dir: "desc", shippedFilter: "all", builtin: true },
-      { id: uid("v"), name: "By quarter", layout: "board", group: "quarter", sort: "urgency", dir: "desc", shippedFilter: "all", builtin: true },
-      { id: uid("v"), name: "Shipped", layout: "table", group: "none", sort: "updated", dir: "desc", shippedFilter: "only", builtin: true },
+      { id: uid("v"), name: "All requests", group: "none", layout: "list", shippedFilter: "all", builtin: true },
+      { id: uid("v"), name: "By urgency", group: "urgency", layout: "list", shippedFilter: "hide", builtin: true },
+      { id: uid("v"), name: "Topic heat", group: "topic", layout: "list", shippedFilter: "all", builtin: true },
+      { id: uid("v"), name: "By quarter", group: "quarter", layout: "list", shippedFilter: "all", builtin: true },
+      { id: uid("v"), name: "Shipped", group: "none", layout: "list", shippedFilter: "only", builtin: true },
     ];
   }
   function defaultScoreWeights(){ return { urgency: 3, customers: 2, questions: 1.5, age: 0.03, dueDate: 1 }; }
 
   function seed(){
     const requests = [
-      { id: uid("req"), title: "Currency conversion calculator", description: "Convert prices between currencies inline when viewing invoices.",
-        customers: ["Meridian Co", "Northwind", "Halberd Ltd"],
-        urgency: "medium", topic: "currency",
-        status: "planned", quarter: "Q2 2027", dueDate: daysAgo(-10), createdAt: daysAgo(58), updatedAt: daysAgo(58), questionCount: 3 },
       { id: uid("req"), title: "Bulk export to CSV", description: "Export the full request list, not just the visible page.",
-        customers: ["Northwind", "Faircrest", "Meridian Co", "Oakline"],
+        customers: ["Acme", "Meridian Co", "Halden", "Brightline"],
         urgency: "high", topic: "export",
-        status: "in-progress", quarter: "Q4 2026", dueDate: daysAgo(-3), createdAt: daysAgo(94), updatedAt: daysAgo(94), questionCount: 6 },
-      { id: uid("req"), title: "Dark mode", description: "Full dark theme across the app, not just the editor.",
-        customers: ["Halberd Ltd"],
-        urgency: "low", topic: "appearance",
-        status: "shipped", quarter: "Q3 2026", dueDate: null, createdAt: daysAgo(140), updatedAt: daysAgo(140), questionCount: 2 },
-      { id: uid("req"), title: "Slack notifications for new questions", description: "Ping a Slack channel whenever a customer question comes in unanswered.",
-        customers: ["Faircrest"],
-        urgency: "medium", topic: "notifications",
-        status: "new", quarter: "Q2 2027", dueDate: null, createdAt: daysAgo(12), updatedAt: daysAgo(12), questionCount: 1 },
+        status: "in-progress", quarter: "Q3 2026", dueDate: daysAgo(-3), createdAt: daysAgo(14), updatedAt: daysAgo(2), questionCount: 3, shippedAt: null },
       { id: uid("req"), title: "Role-based permissions", description: "Restrict who can edit vs. only view requests once the team grows.",
-        customers: ["Oakline", "Meridian Co"],
+        customers: ["Otterly", "Halden"],
         urgency: "low", topic: "access",
-        status: "new", quarter: "Q1 2027", dueDate: daysAgo(-2), createdAt: daysAgo(30), updatedAt: daysAgo(30), questionCount: 2 },
+        status: "new", quarter: "Q3 2026", dueDate: daysAgo(-2), createdAt: daysAgo(30), updatedAt: daysAgo(30), questionCount: 2, shippedAt: null },
+      { id: uid("req"), title: "Currency conversion calculator", description: "Convert prices between currencies inline when viewing invoices.",
+        customers: ["Acme", "Meridian Co", "Halden"],
+        urgency: "medium", topic: "currency",
+        status: "planned", quarter: "Q4 2026", dueDate: daysAgo(-10), createdAt: daysAgo(58), updatedAt: daysAgo(58), questionCount: 2, shippedAt: null },
       { id: uid("req"), title: "Weighted priority score", description: "A single combined score view blending urgency, customer count and age.",
-        customers: ["Northwind"],
+        customers: ["Acme"],
         urgency: "low", topic: "prioritisation",
-        status: "planned", quarter: "Q1 2027", dueDate: daysAgo(-25), createdAt: daysAgo(20), updatedAt: daysAgo(20), questionCount: 1 },
+        status: "planned", quarter: "Q4 2026", dueDate: daysAgo(-25), createdAt: daysAgo(20), updatedAt: daysAgo(20), questionCount: 1, shippedAt: null },
+      { id: uid("req"), title: "Slack notifications for new questions", description: "Ping a Slack channel whenever a customer question comes in unanswered.",
+        customers: ["Brightline"],
+        urgency: "medium", topic: "notifications",
+        status: "new", quarter: "Unscheduled", dueDate: null, createdAt: daysAgo(12), updatedAt: daysAgo(12), questionCount: 1, shippedAt: null },
+      { id: uid("req"), title: "Dark theme", description: "Full dark theme across the app, not just the editor.",
+        customers: ["Halden"],
+        urgency: "low", topic: "appearance",
+        status: "shipped", quarter: "Q2 2026", dueDate: null, createdAt: daysAgo(140), updatedAt: daysAgo(100), questionCount: 1, shippedAt: daysAgo(100) },
     ];
     const questions = [
-      { id: uid("q"), text: "Can we show prices in EUR as well as USD for Meridian Co?", matchedRequestId: requests[0].id, answer: null, createdAt: daysAgo(50) },
-      { id: uid("q"), text: "Does the currency calculator support GBP?", matchedRequestId: requests[0].id, answer: null, createdAt: daysAgo(20) },
-      { id: uid("q"), text: "Can I export everything, not just this page?", matchedRequestId: requests[1].id, answer: null, createdAt: daysAgo(40) },
-      { id: uid("q"), text: "Is there a dark theme yet?", matchedRequestId: requests[2].id, answer: "Shipped in Q3 2026 — toggle it in settings.", createdAt: daysAgo(100) },
-      { id: uid("q"), text: "Any way to restrict who can edit requests?", matchedRequestId: requests[4].id, answer: null, createdAt: daysAgo(15) },
-      { id: uid("q"), text: "Do you support multi currency invoices?", matchedRequestId: null, answer: null, createdAt: daysAgo(35) },
-      { id: uid("q"), text: "Any plan to support multiple currencies on one invoice?", matchedRequestId: null, answer: null, createdAt: daysAgo(9) },
-      { id: uid("q"), text: "When is the export feature landing?", matchedRequestId: null, answer: null, createdAt: daysAgo(18) },
-      { id: uid("q"), text: "Any timeline on when export ships?", matchedRequestId: null, answer: null, createdAt: daysAgo(4) },
+      { id: uid("q"), text: "Can I export everything, not just the page I'm on?", matchedRequestId: requests[0].id, answer: null, createdAt: daysAgo(2) },
+      { id: uid("q"), text: "Does the export support scheduling?", matchedRequestId: requests[0].id, answer: null, createdAt: daysAgo(5) },
+      { id: uid("q"), text: "Is there a CSV download?", matchedRequestId: requests[0].id, answer: null, createdAt: daysAgo(9) },
+      { id: uid("q"), text: "Can we show prices in EUR as well as USD?", matchedRequestId: requests[2].id, answer: null, createdAt: daysAgo(50) },
+      { id: uid("q"), text: "Does the currency calculator support GBP?", matchedRequestId: requests[2].id, answer: null, createdAt: daysAgo(20) },
+      { id: uid("q"), text: "Is there a dark theme yet?", matchedRequestId: requests[5].id, answer: "Shipped in Q2 2026 — toggle it in settings.", createdAt: daysAgo(90) },
+      { id: uid("q"), text: "Can we restrict who's allowed to edit requests?", matchedRequestId: requests[1].id, answer: null, createdAt: daysAgo(20) },
+      { id: uid("q"), text: "Is there a view-only role for requests?", matchedRequestId: requests[1].id, answer: null, createdAt: daysAgo(6) },
+      { id: uid("q"), text: "Can this ping a Slack channel when a question comes in?", matchedRequestId: requests[4].id, answer: null, createdAt: daysAgo(10) },
+      // These three, and the two below, are worded to deliberately share 2+
+      // stemmed words with each other (see clusterUnmatchedQuestions() /
+      // stem() further down) so the seed data actually demonstrates a
+      // "recurring theme" on first launch, instead of relying on wording
+      // that merely *looks* similar to a person but doesn't overlap under
+      // the app's real (literal, non-semantic) matching.
+      { id: uid("q"), text: "Does it work without internet access?", matchedRequestId: null, answer: null, createdAt: daysAgo(12) },
+      { id: uid("q"), text: "Can I use it with no internet access?", matchedRequestId: null, answer: null, createdAt: daysAgo(4) },
+      { id: uid("q"), text: "Does it need internet access to run?", matchedRequestId: null, answer: null, createdAt: daysAgo(1) },
+      { id: uid("q"), text: "Can I see the change history for a request?", matchedRequestId: null, answer: null, createdAt: daysAgo(18) },
+      { id: uid("q"), text: "Is there a change history log per request?", matchedRequestId: null, answer: null, createdAt: daysAgo(6) },
     ];
     return {
       requests, questions,
       views: defaultViews(),
+      requestsControls: defaultRequestsControls(),
       scoreWeights: defaultScoreWeights(),
-      activeView: null, feedHeightPx: null, feed: []
+      activeScreen: "now", currentAnswer: null, feed: []
     };
   }
 
-  // What loadState() returns for "the data folder is empty, but this isn't
-  // the true first run" (see hasEverLaunched() in backend.cjs) — same shape
-  // as seed(), minus the example content. There's no in-app way to reach
-  // this deliberately anymore (see docs/DESIGN.md — the old "Clear all
-  // data" button was removed as too dangerous to leave permanently
-  // visible); it's what you land on by deleting the Question Data folder
-  // yourself, any time after the first.
   function blankState(){
     return {
       requests: [], questions: [],
       views: defaultViews(),
+      requestsControls: defaultRequestsControls(),
       scoreWeights: defaultScoreWeights(),
-      activeView: null, feedHeightPx: null, feed: []
+      activeScreen: "now", currentAnswer: null, feed: []
     };
   }
 
-  // Older saved state (or the seed data) may carry urgency as an entry inside the
-  // generic `tags` array from a previous version of this app, where it could only
-  // ever be set once at creation time. This lifts it into its own first-class,
-  // always-editable `urgency` field and backfills `updatedAt` where missing.
   function migrateState(s){
     s.requests.forEach(r => {
       if (r.urgency === undefined){
         const utag = (r.tags || []).find(t => t.type === "urgency");
         r.urgency = utag ? utag.value : "medium";
       }
-      // Urgency is a fixed three-value field — clamp anything else (e.g. a custom
-      // value added in an earlier version of this prototype) back to "medium".
       if (!["high","medium","low"].includes(r.urgency)) r.urgency = "medium";
-      // Topic used to live as an entry in a generic, unbounded `tags` array. It's
-      // really just another categorical field (like status or urgency), so it
-      // becomes its own single value, taking the first accepted (or otherwise
-      // first-seen) topic entry if one existed.
       if (r.topic === undefined){
         const ttag = (r.tags || []).find(t => t.type === "topic" && t.state === "accepted") || (r.tags || []).find(t => t.type === "topic");
         r.topic = ttag ? ttag.value : null;
       }
       delete r.tags;
       delete r.segment;
-      // Legacy field: shipped-ness is now derived purely from status (see
-      // isShipped()) — strip the old separately-stored boolean so it can't
-      // linger, stale, in memory for a request whose status changed since.
       delete r.shipped;
       if (r.updatedAt === undefined) r.updatedAt = r.createdAt;
       if (r.dueDate === undefined) r.dueDate = null;
+      // shippedAt is derived/recorded alongside status==="shipped" (not a
+      // second source of truth for *whether* it's shipped — see
+      // docs/DESIGN.md — just *when*, for the Trends "shipped but still
+      // asked" callout). Backfill it for anything already shipped from a
+      // save that predates this field, using updatedAt as the best guess.
+      if (r.shippedAt === undefined) r.shippedAt = isShipped(r) ? (r.updatedAt || r.createdAt) : null;
     });
     if (!s.scoreWeights) s.scoreWeights = defaultScoreWeights();
-    if (!s.views.some(v => v.sort === "score")) s.views.unshift({ id: uid("v"), name: "Today", layout: "table", group: "none", sort: "score", dir: "desc", shippedFilter: "hide", builtin: true });
-    // shippedFilter is new — default every existing view to "all" (unfiltered),
-    // preserving exactly what it showed before, EXCEPT the Today view: a
-    // shipped request's score only ever climbs as its due date falls further
-    // into the past (see the comment in render()), which is the actual bug
-    // this was added to fix, so upgrading straight to a clean Today view
-    // beats requiring a manual fix. Identified by sort==="score", the same
-    // heuristic already used just above to find/insert it.
-    s.views.forEach(v => { if (v.shippedFilter === undefined) v.shippedFilter = v.sort === "score" ? "hide" : "all"; });
-    // Also add the new built-in "Shipped" view if this save predates it, so
-    // upgrading users get somewhere shipped requests actually live now that
-    // Today/By urgency can hide them — not just a spot they vanish from.
-    if (!s.views.some(v => v.shippedFilter === "only")) s.views.push({ id: uid("v"), name: "Shipped", layout: "table", group: "none", sort: "updated", dir: "desc", shippedFilter: "only", builtin: true });
-    // Older "unanswered" feed entries were frozen HTML strings with no id, so
-    // they can't be tracked to a created request — give them what they need
-    // to work like new ones (see feedBodyHtml/saveDraft), rather than crashing.
-    (s.feed || []).forEach(f => {
-      if (f.kind === "unanswered"){
-        if (f.id === undefined) f.id = uid("f");
-        if (f.actionedRequestId === undefined) f.actionedRequestId = null;
-      }
-    });
+    if (!s.views || !s.views.length) s.views = defaultViews();
+    // Old tab-based views (layout: table/board/gallery, sort/dir) migrate into
+    // the new group/layout/shippedFilter shape used by the Requests screen.
+    // "Today" (sort==="score") is gone — it's the Now screen now.
+    s.views = s.views.filter(v => v.sort !== "score").map(v => ({
+      id: v.id, name: v.name,
+      group: v.group === "status" ? "none" : (v.group || "none"),
+      layout: "list",
+      shippedFilter: v.shippedFilter || "all",
+      builtin: !!v.builtin,
+    }));
+    if (!s.requestsControls) s.requestsControls = defaultRequestsControls();
+    if (!s.activeScreen) s.activeScreen = "now";
+    if (s.currentAnswer === undefined) s.currentAnswer = null;
+    if (!s.feed) s.feed = [];
     if (!s.theme) s.theme = "system";
-    if (s.feedHeightPx === undefined) s.feedHeightPx = null;
     return s;
   }
 
-  // "system" leaves data-theme unset, so the OS-preference media query below
-  // decides; "light"/"dark" pin it explicitly. Every color in this page is
-  // already a CSS variable keyed off :root[data-theme], so this is the only
-  // code needed to make the switch actually take effect.
   function applyTheme(){
     if (state.theme === "light" || state.theme === "dark") document.documentElement.setAttribute("data-theme", state.theme);
     else document.documentElement.removeAttribute("data-theme");
   }
 
   let state = migrateState((await loadState()) || seed());
-  if (!state.activeView && state.views.length) state.activeView = state.views[0].id;
 
-  // Topic suggestion used to run off a fixed dictionary of keywords per topic
-  // (currency/export/appearance/etc, written for this prototype's original
-  // demo content) — which meant it could never suggest a topic someone
-  // actually uses in their own domain (e.g. "Maintenance", "Strata"), since
-  // that topic simply wasn't in the dictionary. Instead, it now learns each
-  // topic's vocabulary from the requests already tagged with it — the same
-  // word-overlap technique already used to match questions to requests — so
-  // it works for any topic, built-in or custom, based purely on what's
-  // actually been logged. The one limitation that comes with that: a topic
-  // with nothing tagged under it yet has no vocabulary to learn from, so it
-  // can't be suggested until at least one request has used it.
+  // ---------------- Topic / tag suggestion (unchanged logic) ----------------
   function suggestTopic(text){
     const words = new Set(stem(text));
     if (words.size === 0) return null;
@@ -507,14 +602,9 @@
     });
     if (!best) return null;
     const n = state.requests.filter(r => r.topic === best).length;
-    return { type:"topic", value:best, state:"suggested", reason:`similar wording to ${n} existing “${best}” request${n===1?"":"s"}` };
+    return { type:"topic", value:best, state:"suggested", reason:`similar wording to ${n} existing "${best}" request${n===1?"":"s"}` };
   }
   function suggestTags(text){
-    // Urgency is included here as a suggested chip, same as topic, so the draft
-    // review flow looks and behaves the same as it always did. It's still lifted
-    // onto its own `urgency` field when the request is saved (see saveDraft) so
-    // that, unlike topic, it stays a single always-editable value rather than a
-    // permanent tag once accepted.
     const t = text.toLowerCase(); const tags = [];
     if (/urgent|asap|blocking|critical|breaking/.test(t)) tags.push({ type:"urgency", value:"high", state:"suggested", reason:"urgent language" });
     else if (/nice to have|whenever|no rush/.test(t)) tags.push({ type:"urgency", value:"low", state:"suggested", reason:"low-urgency language" });
@@ -528,12 +618,21 @@
     if (!m) return [];
     return m[1].split(/,| and /).map(s=>s.trim()).filter(Boolean);
   }
-  // Generic words that shouldn't count toward a match regardless of length —
-  // filtering by meaning (a stopword list) rather than by length alone, so a
-  // short but meaningful word (an acronym like "AGM" or "API", "UX", "QA") can
-  // still match. A pure length cutoff (the previous approach) silently threw
-  // those away along with real stopwords, making any 3-letter-or-shorter term
-  // permanently unmatchable no matter how the question was phrased.
+  // Parses/picks the customer chip shown next to the echoed question on the
+  // Answer screen: an explicit "requested by/for/from X" phrase first (same
+  // pattern used for feature-request drafts), otherwise a known customer name
+  // mentioned anywhere in the text (whole-word match against the curated
+  // customer vocabulary — never free-text — same spirit as matchEntities()).
+  function parseCustomerFromText(text){
+    const explicit = extractCustomers(text);
+    if (explicit.length) return explicit[0];
+    const customers = knownCustomers();
+    for (const c of customers){
+      const re = new RegExp("\\b" + c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b", "i");
+      if (re.test(text)) return c;
+    }
+    return null;
+  }
   const STOPWORDS = new Set(["the","a","an","is","are","was","were","be","been","being","to","of","in","on","at","by",
     "for","with","and","or","but","not","no","do","does","did","it","its","this","that","these","those","i","you",
     "he","she","we","they","his","her","our","your","their","as","if","so","up","out","can","will","would","should",
@@ -548,14 +647,6 @@
       const score = overlap(words, stem(q.text));
       if (score > bestScore){ bestScore = score; best = { type:"question", item:q, score }; }
     }
-    // Deliberately title + description only, not topic: several requests can
-    // share a topic (e.g. several things tagged "Strata"), so a question that
-    // merely mentions the topic's own name would otherwise clear the match
-    // threshold against ALL of them off that one generic word alone, and
-    // arbitrarily "win" one — a false-positive match to a specific request
-    // that the actual wording never pointed to. Typing just a topic name on
-    // its own is already handled properly, and safely, by matchEntities()
-    // above, which lists every request under it instead of guessing one.
     for (const r of state.requests){
       const hay = stem(r.title + " " + r.description);
       const score = overlap(words, hay);
@@ -565,18 +656,14 @@
   }
   function isRequestIntent(text){ return /^raise (a )?(new )?feature request|^new feature request|^feature request[:]/i.test(text.trim()); }
 
-  // ---------------- Entity lookup (customer names / tag values) ----------------
-  // Matching against a curated, finite vocabulary (only names and tag values that
-  // actually appear on requests) rather than free-text search is what keeps this safe:
-  // a coincidental word inside some unrelated description can't trigger it, because
-  // it has to equal (or closely match) an entry in that vocabulary, not just appear in text.
+  // ---------------- Entity lookup (customer / topic / quarter) ----------------
   function knownCustomers(){
     const set = new Set();
     state.requests.forEach(r => r.customers.forEach(c => set.add(c)));
     return Array.from(set);
   }
   function knownTags(){
-    const map = new Map(); // key: type|value (lowercase) -> { type, value }
+    const map = new Map();
     state.requests.forEach(r => {
       if (!r.topic) return;
       const key = "topic|" + r.topic.toLowerCase();
@@ -589,20 +676,14 @@
     if (q.length < 2) return { customers: [], tags: [] };
     const customers = knownCustomers();
     const tags = knownTags();
-    // Exact match (case-insensitive) first — this is the strong, unambiguous case.
     let cMatches = customers.filter(c => c.toLowerCase() === q);
     let tMatches = tags.filter(t => t.value.toLowerCase() === q);
-    // Only fall back to substring matching if nothing matched exactly, and require
-    // the typed text to be at least 3 characters so short words don't over-match.
     if (cMatches.length === 0 && tMatches.length === 0 && q.length >= 3){
       cMatches = customers.filter(c => c.toLowerCase().includes(q));
       tMatches = tags.filter(t => t.value.toLowerCase().includes(q));
     }
     return { customers: cMatches, tags: tMatches };
   }
-  // Quarters aren't a fixed enum — they're whatever values already exist across
-  // requests, sorted chronologically where they follow the "Q<n> YYYY" pattern
-  // (anything else, e.g. "Unscheduled", sorts first).
   function parseQuarterSort(q){
     const m = /^Q([1-4])\s+(\d{4})$/.exec(q || "");
     return m ? (parseInt(m[2],10)*10 + parseInt(m[1],10)) : -1;
@@ -612,21 +693,30 @@
     state.requests.forEach(r => { if (r.quarter) set.add(r.quarter); });
     return Array.from(set).sort((a,b) => parseQuarterSort(a) - parseQuarterSort(b));
   }
-
-  // Generic "known values already used for this field, across all requests" —
-  // backs the Status / Quarter / Topic dropdowns the same way
-  // knownQuarters() backs Quarter. `presets` (if any) come first, in their given
-  // order; anything else in use gets appended alphabetically.
+  // Quarter is treated as a curated-vocabulary entity, exactly like customer
+  // and topic (see docs/DESIGN.md): the word "quarter"/"quarters"/"this
+  // quarter" (a request to see all of them), or a literal quarter value that
+  // already exists on a request (e.g. "Q4", "Q3 2026", "Unscheduled"). Never
+  // free-text — a quarter not actually in use can't be "found".
+  function matchQuarterQuery(text){
+    const t = text.trim().toLowerCase();
+    if (/\bquarters?\b/.test(t) || /this quarter/.test(t) || /planned/.test(t)) return { allQuarters: true };
+    const quarters = knownQuarters();
+    const exact = quarters.find(q => q.toLowerCase() === t);
+    if (exact) return { allQuarters: true, focus: exact };
+    const qOnly = /^q([1-4])$/i.exec(t.replace(/\s+/g,""));
+    if (qOnly){
+      const m = quarters.find(q => new RegExp("^Q"+qOnly[1]+"\\b","i").test(q));
+      if (m) return { allQuarters: true, focus: m };
+    }
+    if (/unscheduled/.test(t) && quarters.includes("Unscheduled")) return { allQuarters: true, focus: "Unscheduled" };
+    return null;
+  }
   function knownValuesFor(field, presets){
     const extras = new Set();
     state.requests.forEach(r => { if (r[field] && !(presets||[]).includes(r[field])) extras.add(r[field]); });
     return (presets||[]).concat(Array.from(extras).sort());
   }
-
-  // Wires a <select> + hidden "add new" <input> pair: choosing "__new__" reveals
-  // the input; typing a value and pressing Enter or blurring commits it via
-  // onCommit(value, isNewValue). Used for Status, Urgency, Quarter, Topic and
-  // Topic so those fields all behave identically.
   function wireAddableSelect(selectEl, inputEl, onCommit){
     selectEl.onchange = () => {
       if (selectEl.value === "__new__"){
@@ -654,196 +744,8 @@
   function requestsForCustomer(name){ return state.requests.filter(r => r.customers.some(c => c.toLowerCase() === name.toLowerCase())); }
   function requestsForTag(type, value){ return state.requests.filter(r => (r[type]||"").toLowerCase() === value.toLowerCase()); }
   function reqLinks(list){ return list.map(r => `<span class="src" data-go-req="${r.id}">${escapeHtml(r.title)}</span>`).join(", "); }
-  function buildLookupHtml(matches){
-    const parts = [];
-    matches.customers.forEach(name => {
-      const reqs = requestsForCustomer(name);
-      parts.push(`<strong>${escapeHtml(name)}</strong> (customer) is on ${reqs.length} request${reqs.length===1?"":"s"}: ${reqLinks(reqs)}`);
-    });
-    matches.tags.forEach(t => {
-      const reqs = requestsForTag(t.type, t.value);
-      parts.push(`Tagged <strong>${t.type}: ${escapeHtml(t.value)}</strong> on ${reqs.length} request${reqs.length===1?"":"s"}: ${reqLinks(reqs)}`);
-    });
-    return parts.join("<br>");
-  }
 
-  const tabsEl = document.getElementById("tabs");
-
-  // Whole-tab drag-to-reorder (like browser tabs: a click that doesn't move
-  // switches views, a click-and-drag reorders). Only the tabs backed by
-  // state.views participate — Trends and "+" are never draggable and never
-  // valid drop targets, matching Trends's existing pinned/non-deletable
-  // status (see below) and "+" being an action, not a view.
-  let draggedViewId = null;
-  function clearDragIndicators(){
-    tabsEl.querySelectorAll(".drag-over-before,.drag-over-after").forEach(el => el.classList.remove("drag-over-before","drag-over-after"));
-  }
-  // Dropping in the empty space after the last tab (but still left of Trends)
-  // appends to the end — the per-tab handlers below only fire directly over
-  // a tab, so this is what catches "drop past everything."
-  tabsEl.addEventListener("dragover", (e) => { if (draggedViewId !== null) e.preventDefault(); });
-  tabsEl.addEventListener("drop", (e) => {
-    if (e.target !== tabsEl || draggedViewId === null) return;
-    e.preventDefault();
-    const fromIdx = state.views.findIndex(x => x.id === draggedViewId);
-    if (fromIdx === -1) return;
-    const [moved] = state.views.splice(fromIdx, 1);
-    state.views.push(moved);
-    saveState(); renderTabs();
-  });
-
-  function renderTabs(){
-    tabsEl.innerHTML = "";
-    state.views.forEach(v => {
-      const b = document.createElement("button");
-      b.className = "tab" + (v.id === state.activeView ? " active" : "");
-      b.textContent = v.name;
-      b.draggable = true;
-      b.onclick = () => { state.activeView = v.id; saveState(); render(); };
-      b.addEventListener("dragstart", (e) => {
-        draggedViewId = v.id;
-        e.dataTransfer.effectAllowed = "move";
-        e.dataTransfer.setData("text/plain", v.id);
-        // Deferred so the browser's drag-image snapshot is taken before the
-        // tab fades — applying the class synchronously here can make the
-        // dragged ghost itself look half-transparent instead of just the tab
-        // left behind in the bar.
-        setTimeout(() => b.classList.add("dragging"), 0);
-      });
-      b.addEventListener("dragend", () => {
-        draggedViewId = null;
-        b.classList.remove("dragging");
-        clearDragIndicators();
-      });
-      b.addEventListener("dragover", (e) => {
-        if (draggedViewId === null || draggedViewId === v.id) return;
-        e.preventDefault();
-        const rect = b.getBoundingClientRect();
-        const before = (e.clientX - rect.left) < rect.width / 2;
-        clearDragIndicators();
-        b.classList.add(before ? "drag-over-before" : "drag-over-after");
-      });
-      b.addEventListener("drop", (e) => {
-        if (draggedViewId === null || draggedViewId === v.id) return;
-        e.preventDefault();
-        const rect = b.getBoundingClientRect();
-        const before = (e.clientX - rect.left) < rect.width / 2;
-        const fromIdx = state.views.findIndex(x => x.id === draggedViewId);
-        if (fromIdx === -1) return;
-        const [moved] = state.views.splice(fromIdx, 1);
-        const toIdx = state.views.findIndex(x => x.id === v.id);
-        state.views.splice(before ? toIdx : toIdx + 1, 0, moved);
-        saveState(); renderTabs();
-      });
-      tabsEl.appendChild(b);
-    });
-    // Trends is a pinned, non-deletable tab — it's a cross-entity report, not
-    // another saved view of the requests table, so it lives outside state.views.
-    const trends = document.createElement("button");
-    trends.className = "tab" + (state.activeView === "__trends__" ? " active" : "");
-    trends.textContent = "Trends";
-    trends.onclick = () => { state.activeView = "__trends__"; saveState(); render(); };
-    tabsEl.appendChild(trends);
-    const add = document.createElement("button");
-    add.className = "tab-add"; add.textContent = "+"; add.title = "New view";
-    add.onclick = () => openOverlay("viewOverlay");
-    tabsEl.appendChild(add);
-  }
-
-  function sortReqs(list, sort, dir){
-    const mul = dir === "asc" ? 1 : -1; const arr = list.slice();
-    arr.sort((a,b) => {
-      let av, bv;
-      switch(sort){
-        case "customers": av = a.customers.length; bv = b.customers.length; break;
-        case "questions": av = a.questionCount; bv = b.questionCount; break;
-        case "age": av = a.createdAt; bv = b.createdAt; break;
-        case "updated": av = a.updatedAt; bv = b.updatedAt; break;
-        case "urgency": av = URGENCY_RANK[a.urgency] || 0; bv = URGENCY_RANK[b.urgency] || 0; break;
-        case "title": av = a.title.toLowerCase(); bv = b.title.toLowerCase(); break;
-        case "score": av = scoreOf(a); bv = scoreOf(b); break;
-        case "dueDate":
-          // Undated requests always sort to the end regardless of direction —
-          // "no due date" isn't more or less urgent than any dated one, it's unranked.
-          av = a.dueDate === null ? Infinity : a.dueDate; bv = b.dueDate === null ? Infinity : b.dueDate;
-          if (av === Infinity && bv === Infinity) return 0;
-          if (av === Infinity) return 1; if (bv === Infinity) return -1;
-          break;
-        default: av = 0; bv = 0;
-      }
-      if (av < bv) return -1*mul; if (av > bv) return 1*mul; return 0;
-    });
-    return arr;
-  }
-  function groupReqs(list, group, sort, dir){
-    if (group === "none") return [{ key: null, label: null, items: list }];
-    const groups = {};
-    list.forEach(r => {
-      let key;
-      if (group === "status") key = r.status;
-      else if (group === "urgency") key = r.urgency || "unset";
-      else if (group === "topic") key = r.topic || "untagged";
-      else if (group === "quarter") key = r.quarter || "unscheduled";
-      else key = "all";
-      if (!groups[key]) groups[key] = [];
-      groups[key].push(r);
-    });
-    let keys = Object.keys(groups);
-    // Status has a fixed preferred order for its known presets, but since it can
-    // also hold custom values (added via "+ Add new"), any keys outside the
-    // presets are appended afterward, alphabetically. Urgency stays a strict
-    // three-value field, so its order is always just high/medium/low. Neither
-    // takes the view's sort/direction into account — they have their own
-    // intrinsic order regardless of what the requests inside them are sorted by.
-    if (group === "status") keys = STATUS_ORDER.filter(k => groups[k]).concat(Object.keys(groups).filter(k => !STATUS_ORDER.includes(k)).sort());
-    else if (group === "urgency") keys = ["high","medium","low"].filter(k => groups[k]);
-    else if (group === "quarter") keys.sort((a,b) => parseQuarterSort(a) - parseQuarterSort(b));
-    else {
-      // Topic (or any other grouping with no intrinsic order): the group
-      // headers themselves are ordered by the same metric the toolbar says
-      // the view is "sorted by" — a group's total question count, its highest
-      // urgency, etc — not left alphabetical. Otherwise "grouped by topic,
-      // sorted by question count" is only true *within* each topic, and the
-      // topic with the most questions can still land anywhere on the page.
-      const mul = dir === "asc" ? 1 : -1;
-      function groupMetric(k){
-        const items = groups[k];
-        switch(sort){
-          case "questions": return items.reduce((s,r) => s + r.questionCount, 0);
-          case "customers": return items.reduce((s,r) => s + r.customers.length, 0);
-          case "score": return items.reduce((s,r) => s + scoreOf(r), 0);
-          case "urgency": return Math.max(...items.map(r => URGENCY_RANK[r.urgency] || 0));
-          case "age": return Math.min(...items.map(r => r.createdAt));
-          case "dueDate": { const dated = items.filter(r => r.dueDate); return dated.length ? Math.min(...dated.map(r => r.dueDate)) : Infinity; }
-          case "title": return k.toLowerCase();
-          default: return items.length;
-        }
-      }
-      keys.sort((a,b) => {
-        const av = groupMetric(a), bv = groupMetric(b);
-        if (av < bv) return -1*mul; if (av > bv) return 1*mul; return 0;
-      });
-    }
-    return keys.map(k => ({ key:k, label: labelFor(group,k), items: groups[k] }));
-  }
-  function labelFor(group, key){
-    if (group === "status") return statusLabel(key);
-    if (group === "urgency") return key === "unset" ? "No urgency set" : key.charAt(0).toUpperCase()+key.slice(1);
-    if (group === "topic") return key === "untagged" ? "Untagged" : key.charAt(0).toUpperCase()+key.slice(1);
-    return key;
-  }
-  function ageLabel(ts){ const d = Math.floor((Date.now()-ts)/86400000); return d === 0 ? "today" : d+"d ago"; }
-  function daysUntil(ts){ return (ts - Date.now())/86400000; }
-  function dueLabel(ts){
-    if (!ts) return null;
-    const d = daysUntil(ts);
-    return d <= 0 ? Math.round(-d)+"d overdue" : "due in "+Math.round(d)+"d";
-  }
-
-  // A single combined priority number, built from weighted, independently
-  // adjustable components (state.scoreWeights) so the ranking is tunable and
-  // never a hidden constant. Each component is returned separately too, so the
-  // "Today" view can show its math rather than asking for blind trust.
+  // ---------------- Priority score (unchanged formula) ----------------
   function computeScoreParts(r){
     const w = state.scoreWeights;
     const urgencyPart = (URGENCY_RANK[r.urgency] || 0) * w.urgency;
@@ -859,72 +761,852 @@
     return { urgencyPart, customerPart, questionPart, agePart, duePart, total };
   }
   function scoreOf(r){ return computeScoreParts(r).total; }
-  function scoreBreakdownText(r){
-    const p = computeScoreParts(r);
-    const bits = [
-      `urgency ${p.urgencyPart.toFixed(1)}`,
-      `${r.customers.length} cust. ${p.customerPart.toFixed(1)}`,
-      `${r.questionCount} asked ${p.questionPart.toFixed(1)}`,
-      `age ${p.agePart.toFixed(1)}`,
-    ];
-    if (r.dueDate) bits.push(`${dueLabel(r.dueDate)} ${p.duePart.toFixed(1)}`);
-    return bits.join(" · ");
+
+  function ageLabel(ts){ const d = Math.floor((Date.now()-ts)/86400000); return d === 0 ? "today" : d+"d ago"; }
+  function daysUntil(ts){ return (ts - Date.now())/86400000; }
+  function dueLabel(ts){
+    if (!ts) return null;
+    const d = daysUntil(ts);
+    return d <= 0 ? Math.round(-d)+"d overdue" : "due in "+Math.round(d)+"d";
+  }
+  function dueShort(ts){
+    if (!ts) return "no due date";
+    const d = daysUntil(ts);
+    return d <= 0 ? Math.round(-d)+"d overdue" : "due in "+Math.round(d)+"d";
+  }
+  function isDueSoon(r){ return r.dueDate && daysUntil(r.dueDate) <= 3; }
+
+  // ---------------- Clustering of unmatched questions (unchanged logic) ----------------
+  function clusterUnmatchedQuestions(){
+    const clusters = [];
+    state.questions.filter(q => !q.matchedRequestId).forEach(q => {
+      const words = stem(q.text);
+      const threshold = words.length === 0 ? Infinity : Math.min(2, words.length);
+      const target = clusters.find(c => overlap(new Set(words), c.words) >= threshold);
+      if (target){ target.items.push(q); target.words.push(...words); }
+      else clusters.push({ words: words.slice(), items: [q] });
+    });
+    return clusters.filter(c => c.items.length > 1).sort((a,b) => b.items.length - a.items.length);
+  }
+  function clusterLabel(cluster){
+    // Top shared stem(s) across the cluster, title-cased — used as the theme
+    // name shown in the UI and as the draft title when raised as a request.
+    const freq = new Map();
+    cluster.items.forEach(q => { new Set(stem(q.text)).forEach(w => freq.set(w, (freq.get(w)||0)+1)); });
+    const sorted = Array.from(freq.entries()).sort((a,b) => b[1]-a[1]);
+    const top = sorted.filter(([,n]) => n > 1).slice(0,2).map(([w]) => w);
+    const words = top.length ? top : (sorted[0] ? [sorted[0][0]] : ["untitled theme"]);
+    return words.map(w => w.charAt(0).toUpperCase()+w.slice(1)).join(" ");
+  }
+  function customerRequestIndex(){
+    const map = new Map();
+    state.requests.forEach(r => r.customers.forEach(c => {
+      if (!map.has(c)) map.set(c, []);
+      map.get(c).push(r);
+    }));
+    return map;
+  }
+  function findClusterContaining(q){
+    return clusterUnmatchedQuestions().find(c => c.items.includes(q)) || null;
   }
 
-  // Read-only chip rendering for table/board/gallery cards: urgency and topic are
-  // plain first-class fields, so this is just two optional chips.
-  function tagChips(req){
-    let html = req.urgency ? `<span class="chip urgency-${req.urgency}">${req.urgency}</span>` : "";
-    if (req.topic) html += `<span class="chip topic">${escapeHtml(req.topic)}</span>`;
-    return html;
+  function escapeHtml(s){ return (s||"").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c])); }
+
+  // =====================================================================
+  //  Navigation shell
+  // =====================================================================
+  const navEl = document.getElementById("mainNav");
+  function renderNav(){
+    const items = [];
+    if (state.activeScreen === "answer") items.push({ key: "answer", label: "Ask", crumb: true });
+    items.push({ key: "now", label: "Now" }, { key: "requests", label: "Requests" }, { key: "trends", label: "Trends" });
+    navEl.innerHTML = items.map(it => {
+      const active = it.key === state.activeScreen || (it.crumb);
+      const cls = it.crumb ? "ask-crumb" : (it.key === state.activeScreen ? "active" : "");
+      return `<button class="${cls}" data-nav="${it.key}" ${it.crumb ? "disabled" : ""}>${it.label}</button>`;
+    }).join("");
+    navEl.querySelectorAll("[data-nav]:not(.ask-crumb)").forEach(b => {
+      b.onclick = () => { state.activeScreen = b.getAttribute("data-nav"); state.currentAnswer = null; render(); };
+    });
   }
 
   const mainEl = document.getElementById("main");
   function render(){
-    renderTabs();
-    if (state.activeView === "__trends__"){ mainEl.innerHTML = renderTrends(); wireTrendsInteractions(); return; }
-    const view = state.views.find(v => v.id === state.activeView) || state.views[0];
-    if (!view) { mainEl.innerHTML = `<div class="empty-state">No views yet. Add one with the + tab.</div>`; return; }
-    const isScore = view.sort === "score";
-    // Shipped requests otherwise never leave a view once done — a completed
-    // item's due date, if it has one, only ever falls further into the past,
-    // which the priority score reads as increasingly overdue/urgent rather
-    // than "no longer relevant." Filtering here (rather than changing what
-    // the score means for open requests) keeps the score formula meaningful
-    // for the requests it's actually for. See docs/DESIGN.md.
-    const shippedFilter = view.shippedFilter || "all";
-    const shippedNote = shippedFilter === "hide" ? ", hiding shipped" : shippedFilter === "only" ? ", shipped only" : "";
-    const toolbar = `<div class="view-toolbar">
-        <div class="view-descriptor">${view.layout.charAt(0).toUpperCase()+view.layout.slice(1)}${view.group!=='none' ? ", grouped by <b>"+view.group+"</b>" : ""}, sorted by <b>${sortLabel(view.sort)}</b> (${sortDirLabel(view.sort, view.dir)})${shippedNote}</div>
-        <div class="toolbar-actions">${isScore ? `<button class="btn" id="adjustWeightsBtn">Adjust weights</button>` : ""}${view.builtin ? "" : `<button class="btn btn-danger" id="deleteViewBtn">Delete view</button>`}</div>
-      </div>`;
-    if (state.requests.length === 0){ mainEl.innerHTML = toolbar + `<div class="empty-state">No feature requests yet. Ask the composer below to raise one.</div>`; return; }
-    const visible = shippedFilter === "hide" ? state.requests.filter(r => !isShipped(r))
-      : shippedFilter === "only" ? state.requests.filter(r => isShipped(r))
-      : state.requests;
-    if (visible.length === 0){
-      const msg = shippedFilter === "only" ? "Nothing shipped yet." : "Nothing left in this view — everything's shipped.";
-      mainEl.innerHTML = toolbar + `<div class="empty-state">${msg}</div>`; return;
-    }
-    const sorted = sortReqs(visible, view.sort, view.dir);
-    const groups = groupReqs(sorted, view.group, view.sort, view.dir);
-    let body = view.layout === "table" ? renderTable(sorted, isScore) : view.layout === "board" ? renderBoard(groups) : renderGallery(groups);
-    mainEl.innerHTML = toolbar + body;
-    const delBtn = document.getElementById("deleteViewBtn");
-    if (delBtn) delBtn.onclick = () => { state.views = state.views.filter(v => v.id !== view.id); state.activeView = state.views[0] ? state.views[0].id : null; saveState(); render(); };
-    const wBtn = document.getElementById("adjustWeightsBtn");
-    if (wBtn) wBtn.onclick = () => openWeightsOverlay();
-    mainEl.querySelectorAll("[data-open-req]").forEach(el => { el.onclick = () => openRequestDetail(el.getAttribute("data-open-req")); });
+    renderNav();
+    if (state.activeScreen === "answer" && state.currentAnswer) mainEl.innerHTML = renderAnswerScreen();
+    else if (state.activeScreen === "requests") mainEl.innerHTML = renderRequestsScreen();
+    else if (state.activeScreen === "trends") mainEl.innerHTML = renderTrendsScreen();
+    else mainEl.innerHTML = renderNowScreen();
+    wireScreenInteractions();
   }
 
-  // ---------------- Priority weights ----------------
+  // =====================================================================
+  //  Now screen (1a)
+  // =====================================================================
+  function reasonSentence(r){
+    const bits = [];
+    if (r.customers.length > 0) bits.push(`<b>${r.customers.length} customer${r.customers.length===1?"":"s"}</b> ${r.customers.length===1?"is":"are"} waiting on it`);
+    if (r.questionCount > 0) bits.push(`<b>${r.questionCount} question${r.questionCount===1?"":"s"}</b> ${r.questionCount===1?"has":"have"} come in about it`);
+    let dueClause = "";
+    if (r.dueDate){
+      const soon = isDueSoon(r);
+      dueClause = `it's ${soon ? `<span class="due-soon">${dueLabel(r.dueDate)}</span>` : dueLabel(r.dueDate)}`;
+      bits.push(dueClause);
+    }
+    let sentence = bits.length ? bits.join(", ").replace(/,([^,]*)$/, " and$1") + "." : "";
+    let statusClause = "";
+    if (r.status === "in-progress") statusClause = "It's already in progress, so finishing it is worth more than starting something new.";
+    else if (r.status === "planned") statusClause = `It's planned for ${escapeHtml(r.quarter || "a future quarter")}.`;
+    else if (r.status === "new") statusClause = "It hasn't been started.";
+    return (sentence ? sentence + " " : "") + statusClause;
+  }
+  function thenReason(r){
+    const bits = [];
+    if (r.dueDate) bits.push(dueLabel(r.dueDate));
+    else bits.push(r.customers.length ? `${r.customers.length} customer${r.customers.length===1?"":"s"}` : null);
+    if (r.status === "new") bits.push("not started");
+    else if (r.status === "planned") bits.push("planned");
+    if (!r.dueDate && !bits.filter(Boolean).length) bits.push("no due date");
+    return bits.filter(Boolean).join(", ");
+  }
+  function renderNowScreen(){
+    const open = state.requests.filter(r => !isShipped(r)).sort((a,b) => scoreOf(b) - scoreOf(a));
+    if (open.length === 0){
+      const clusters = clusterUnmatchedQuestions();
+      return `<div class="screen-empty">Nothing open right now.${clusters.length ? ` There ${clusters.length===1?"is":"are"} <span class="src" data-nav-go="trends">${clusters.length} recurring theme${clusters.length===1?"":"s"} in Trends</span> worth a look.` : ""}</div>`;
+    }
+    const top = open[0];
+    const then = open.slice(1, 4);
+    const clusters = clusterUnmatchedQuestions();
+    const topCluster = clusters[0];
+    const topClusterCustCount = topCluster ? (new Set(topCluster.items.map(q => parseCustomerFromText(q.text)).filter(Boolean)).size || 1) : 0;
+    const linkedQ = state.questions.filter(q => q.matchedRequestId === top.id).sort((a,b) => b.createdAt - a.createdAt);
+    const mostRecentQ = linkedQ[0];
+
+    return `
+      <div class="now-screen">
+        <div class="now-left">
+          <div class="eyebrow" style="color:var(--teal);">Work on this now</div>
+          <h1 class="now-title">${escapeHtml(top.title)}</h1>
+          <div class="now-reason">${reasonSentence(top)}</div>
+          ${top.customers.length ? `<div class="now-chips">${top.customers.map(c => `<span class="plain-chip">${escapeHtml(c)}</span>`).join("")}</div>` : ""}
+          ${mostRecentQ ? `<div class="now-answered-card">
+            <div class="label">Most recent question it answered</div>
+            <div class="quote">"${escapeHtml(mostRecentQ.text)}"</div>
+            <div class="mono-meta">${escapeHtml(parseCustomerFromText(mostRecentQ.text) || "")}${parseCustomerFromText(mostRecentQ.text) ? " · " : ""}${ageLabel(mostRecentQ.createdAt)}</div>
+          </div>` : ""}
+          <div class="now-actions">
+            <button class="btn-primary" data-open-req="${top.id}">Open request</button>
+            <button class="btn-secondary" data-mark-shipped="${top.id}">Mark shipped</button>
+            <button class="btn-link" data-nav-go="requests">Why not something else?</button>
+          </div>
+        </div>
+        <div class="now-right">
+          ${then.length ? `<div>
+            <div class="eyebrow" style="color:var(--ink-soft);margin-bottom:10px;">Then</div>
+            <div class="then-list">
+              ${then.map((r,i) => `<div class="then-row">
+                <div class="then-rank">${i+2}</div>
+                <div><div class="then-title" data-open-req="${r.id}">${escapeHtml(r.title)}</div><div class="then-reason">${escapeHtml(thenReason(r))}</div></div>
+              </div>`).join("")}
+            </div>
+          </div>` : ""}
+          ${topCluster ? `<div>
+            <div class="eyebrow" style="color:var(--ochre);margin-bottom:10px;">Asked for, but not tracked</div>
+            <div class="theme-card">
+              <div class="theme-title">${escapeHtml(clusterLabel(topCluster))}</div>
+              <div class="theme-sub">${topCluster.items.length} similar question${topCluster.items.length===1?"":"s"} from ${topClusterCustCount} customer${topClusterCustCount===1?"":"s"}, with no request yet</div>
+              <button class="theme-cta" data-raise-cluster-idx="0">Raise as request →</button>
+            </div>
+          </div>` : ""}
+        </div>
+      </div>`;
+  }
+
+  // =====================================================================
+  //  Answer screen (1b) + quarter/entity list answer (2a)
+  // =====================================================================
+  function pushRecentAsk(entry){
+    state.feed.push(entry);
+    if (state.feed.length > 30) state.feed.shift();
+  }
+  function submitAsk(rawText){
+    const text = rawText.trim();
+    if (!text) return;
+    document.getElementById("askInput").value = "";
+
+    // Quarter lookup and customer/topic entity lookup both produce a "list"
+    // answer — grouped cards, never a fuzzy match (see docs/DESIGN.md).
+    const qMatch = matchQuarterQuery(text);
+    const entityMatches = matchEntities(text);
+    if (qMatch || entityMatches.customers.length || entityMatches.tags.length){
+      const answer = qMatch ? buildQuarterAnswer(text, qMatch) : buildEntityAnswer(text, entityMatches);
+      pushRecentAsk({ id: uid("f"), text, kind: "list", summary: answer.recentSummary });
+      state.currentAnswer = answer;
+      state.activeScreen = "answer";
+      saveState(); render();
+      return;
+    }
+
+    if (isRequestIntent(text)){
+      pendingDraftClusterQuestionIds = null; pendingDraftFeedItem = null;
+      openDraftFromText(text);
+      return;
+    }
+
+    const customer = parseCustomerFromText(text);
+    const match = findAnswer(text);
+    if (match && match.type === "request"){
+      const r = match.item;
+      const q = { id: uid("q"), text, matchedRequestId: null, answer: null, createdAt: Date.now() };
+      state.questions.push(q);
+      const alreadyCustomer = customer && r.customers.some(c => c.toLowerCase() === customer.toLowerCase());
+      state.currentAnswer = { kind: "match", text, customer, questionId: q.id, requestId: r.id, alreadyCustomer: !!alreadyCustomer, counted: false };
+      pushRecentAsk({ id: uid("f"), text, kind: "match", requestId: r.id });
+      state.activeScreen = "answer";
+      saveState(); render();
+      return;
+    }
+    if (match && match.type === "question"){
+      const q = { id: uid("q"), text, matchedRequestId: match.item.matchedRequestId || null, answer: null, createdAt: Date.now() };
+      state.questions.push(q);
+      state.currentAnswer = { kind: "faq", text, customer, faqAnswer: match.item.answer, linkedRequestId: match.item.matchedRequestId || null };
+      pushRecentAsk({ id: uid("f"), text, kind: "faq", requestId: match.item.matchedRequestId || null });
+      state.activeScreen = "answer";
+      saveState(); render();
+      return;
+    }
+
+    // No match: log the question, then see whether it joins an existing
+    // theme (2+ questions sharing stemmed words) or starts a fresh one.
+    const q = { id: uid("q"), text, matchedRequestId: null, answer: null, createdAt: Date.now() };
+    state.questions.push(q);
+    const cluster = findClusterContaining(q);
+    if (cluster){
+      const others = cluster.items.filter(x => x.id !== q.id);
+      const customersInCluster = new Set(cluster.items.map(x => parseCustomerFromText(x.text)).filter(Boolean));
+      state.currentAnswer = { kind: "theme", text, customer, questionId: q.id, similar: others, clusterQuestionIds: cluster.items.map(x=>x.id),
+        label: clusterLabel(cluster), count: cluster.items.length, customerCount: customersInCluster.size || 1,
+        ordinal: ordinalOf(cluster.items.length) };
+      pushRecentAsk({ id: uid("f"), text, kind: "theme", count: cluster.items.length });
+    } else {
+      state.currentAnswer = { kind: "first", text, customer, questionId: q.id };
+      pushRecentAsk({ id: uid("f"), text, kind: "first" });
+    }
+    state.activeScreen = "answer";
+    saveState(); render();
+  }
+  function ordinalOf(n){
+    const s = ["th","st","nd","rd"], v = n % 100;
+    return n + (s[(v-20)%10] || s[v] || s[0]);
+  }
+
+  function buildQuarterAnswer(text, qMatch){
+    const quarters = knownQuarters();
+    const shippedHidden = state.requests.filter(r => isShipped(r)).length;
+    const openReqs = state.requests.filter(r => !isShipped(r));
+    const groupsByQuarter = {};
+    openReqs.forEach(r => { const k = r.quarter || "Unscheduled"; (groupsByQuarter[k] = groupsByQuarter[k] || []).push(r); });
+    // Real quarters first (chronological), "Unscheduled"/no-quarter last —
+    // parseQuarterSort() gives unscheduled-like values a negative sort key,
+    // which is right for knownQuarters()'s own ascending order but wrong
+    // here, where the undated bucket reads as a trailing "everything else".
+    let orderedKeys = quarters.filter(k => groupsByQuarter[k]);
+    if (groupsByQuarter["Unscheduled"] && !orderedKeys.includes("Unscheduled")) orderedKeys.push("Unscheduled");
+    orderedKeys = orderedKeys.filter(k => parseQuarterSort(k) >= 0).concat(orderedKeys.filter(k => parseQuarterSort(k) < 0));
+    const cards = orderedKeys.map(k => {
+      const items = groupsByQuarter[k];
+      const isUnsched = k === "Unscheduled" || !parseQuarterSort(k) || parseQuarterSort(k) < 0;
+      let headMeta = null, headMetaCls = "";
+      const endsSoon = quarterEndsWithinDays(k, 14);
+      if (isUnsched) { headMeta = "not scheduled"; headMetaCls = "faint"; }
+      else if (endsSoon !== null && endsSoon <= 14 && endsSoon >= 0) { headMeta = `ends in ${endsSoon} day${endsSoon===1?"":"s"}`; headMetaCls = "warn"; }
+      else { const starts = quarterStartsLabel(k); headMeta = starts || ""; }
+      const notStarted = items.filter(r => r.status === "new").length;
+      let footer = null;
+      if (!isUnsched && endsSoon !== null && endsSoon >= 0 && endsSoon <= 14 && notStarted > 0){
+        footer = `${notStarted} of ${items.length} not started, with ${endsSoon} day${endsSoon===1?"":"s"} left in the quarter`;
+      }
+      return {
+        title: k, dashed: isUnsched, muted: isUnsched, headMeta, headMetaCls,
+        rows: items.map(r => ({ id: r.id, title: r.title, sub: `${statusLabel(r.status)} · ${r.customers.length} customer${r.customers.length===1?"":"s"}`, subColor: statusColor(r.status) })),
+        footer,
+      };
+    });
+    return {
+      kind: "list", listType: "quarter", text,
+      title: "Here's what's planned, by quarter.",
+      meta: `matched "quarter" · all ${openReqs.length} open request${openReqs.length===1?"":"s"}${shippedHidden ? ` · ${shippedHidden} shipped request${shippedHidden===1?"":"s"} hidden` : ""}`,
+      cards,
+      quickChips: buildQuarterQuickChips(),
+      recentSummary: `${openReqs.length} request${openReqs.length===1?"":"s"}`,
+    };
+  }
+  function buildQuarterQuickChips(){
+    const chips = ["Q4", "What's in Q3?", "This quarter", "Unscheduled"];
+    return chips;
+  }
+  // Quarter end/start dates aren't stored explicitly (quarters are free-form
+  // labels, not a calendar the app owns) — parsed from the "Q<n> YYYY" label
+  // itself, since that's the only structure the value is guaranteed to have.
+  function quarterBounds(q){
+    const m = /^Q([1-4])\s+(\d{4})$/.exec(q || "");
+    if (!m) return null;
+    const qn = parseInt(m[1],10), year = parseInt(m[2],10);
+    const startMonth = (qn-1)*3;
+    const start = new Date(year, startMonth, 1);
+    const end = new Date(year, startMonth+3, 1);
+    return { start, end };
+  }
+  function quarterEndsWithinDays(q, days){
+    const b = quarterBounds(q);
+    if (!b) return null;
+    const d = Math.ceil((b.end.getTime() - Date.now()) / 86400000);
+    return d;
+  }
+  function quarterStartsLabel(q){
+    const b = quarterBounds(q);
+    if (!b) return null;
+    if (b.start.getTime() <= Date.now()) return null;
+    return "starts " + b.start.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  }
+
+  function buildEntityAnswer(text, matches){
+    const cards = [];
+    matches.customers.forEach(name => {
+      const reqs = requestsForCustomer(name);
+      cards.push({
+        title: name, headMeta: `${reqs.length} request${reqs.length===1?"":"s"}`, headMetaCls: "",
+        rows: reqs.map(r => ({ id: r.id, title: r.title, sub: `${statusLabel(r.status)} · ${r.customers.length} customer${r.customers.length===1?"":"s"}`, subColor: statusColor(r.status) })),
+      });
+    });
+    matches.tags.forEach(t => {
+      const reqs = requestsForTag(t.type, t.value);
+      cards.push({
+        title: t.value.charAt(0).toUpperCase()+t.value.slice(1), headMeta: `${reqs.length} request${reqs.length===1?"":"s"}`, headMetaCls: "",
+        rows: reqs.map(r => ({ id: r.id, title: r.title, sub: `${statusLabel(r.status)} · ${r.customers.length} customer${r.customers.length===1?"":"s"}`, subColor: statusColor(r.status) })),
+      });
+    });
+    const totalReqs = cards.reduce((s,c) => s + c.rows.length, 0);
+    return {
+      kind: "list", listType: "entity", text,
+      title: `Here's what ${escapeHtml(matches.customers[0] || matches.tags[0].value)} is on.`,
+      meta: `matched "${text.trim()}"`,
+      cards,
+      quickChips: [],
+      recentSummary: `${totalReqs} request${totalReqs===1?"":"s"}`,
+    };
+  }
+
+  function renderAnswerScreen(){
+    const a = state.currentAnswer;
+    if (a.kind === "list") return renderListAnswer(a);
+
+    const recent = state.feed.slice(0, -1).slice(-6).reverse();
+    let body = "";
+    if (a.kind === "match"){
+      const r = state.requests.find(x => x.id === a.requestId);
+      if (!r){
+        body = `<div class="answer-card"><div class="answer-card-body"><div class="desc">The request this matched has since been deleted.</div></div></div>`;
+      } else {
+        const rank = rankOf(r);
+        const others = state.requests.filter(x => !isShipped(x)).sort((x,y) => scoreOf(y)-scoreOf(x));
+        const curIdx = others.findIndex(x => x.id === r.id);
+        const matchedWords = Array.from(new Set(stem(a.text))).filter(w => stem(r.title+" "+r.description).includes(w)).slice(0,3);
+        body = `<h2 class="answer-headline">Yes, this is already tracked.</h2>
+          <div class="answer-card">
+            <div class="answer-card-body">
+              <div class="row-between"><div class="title">${escapeHtml(r.title)}</div><div class="mono-meta" style="font-family:var(--font-body);font-size:13.5px;font-weight:500;color:${isShipped(r) ? 'var(--ink-soft)' : 'var(--ochre)'};">${isShipped(r) ? "Shipped" : statusLabel(r.status)}${r.dueDate ? " · " + dueLabel(r.dueDate) : ""}</div></div>
+              <div class="desc">${escapeHtml(r.description)}</div>
+              <div class="mono-meta">${matchedWords.length ? `matched on ${matchedWords.map(w=>'"'+escapeHtml(w)+'"').join(", ")} · ` : ""}already asked by ${escapeHtml(r.customers.join(", ")) || "no one yet"}</div>
+            </div>
+            ${a.counted ? "" : `<div class="answer-strip teal">
+              <div class="strip-text">${a.customer && !a.alreadyCustomer ? `Add <b>${escapeHtml(a.customer)}</b> as the ${ordinalOf(r.customers.length+1)} customer asking. Its rank could move from <b>#${rank || (curIdx+1)} to a higher spot</b>.` : a.alreadyCustomer ? `${escapeHtml(a.customer)} is already counted on this request — just link the question.` : `Link this question. Its question count moves it up the list.`}</div>
+              <button class="btn-teal" data-count-ask="1">${a.customer && !a.alreadyCustomer ? "Count this ask" : "Link this question"}</button>
+            </div>`}
+          </div>
+          <div class="not-what-meant">Not what you meant? <a data-raise-instead="1">Raise a new request instead</a></div>`;
+      }
+    } else if (a.kind === "faq"){
+      const r = a.linkedRequestId ? state.requests.find(x => x.id === a.linkedRequestId) : null;
+      body = `<h2 class="answer-headline">Yes, this is already tracked.</h2>
+        <div class="answer-card"><div class="answer-card-body">
+          <div class="desc">${escapeHtml(a.faqAnswer)}</div>
+          ${r ? `<span class="src" data-go-req="${r.id}">Open the request — ${escapeHtml(r.title)}</span>` : ""}
+        </div></div>`;
+    } else if (a.kind === "theme"){
+      body = `<h2 class="answer-headline">Not tracked yet, but you're the ${a.ordinal} to ask.</h2>
+        <div class="answer-card">
+          <div class="answer-similar-list">
+            <div class="label">Similar questions already logged</div>
+            ${a.similar.map(q => `<div class="answer-similar-row"><div>"${escapeHtml(q.text)}"</div><div class="mono-meta">${escapeHtml(parseCustomerFromText(q.text) || "")}${parseCustomerFromText(q.text) ? " · " : ""}${ageLabel(q.createdAt)}</div></div>`).join("")}
+          </div>
+          <div class="answer-strip ochre">
+            <div class="strip-text">That's a theme: <b>${escapeHtml(a.label)}</b>, ${a.count} question${a.count===1?"":"s"}, ${a.customerCount} customer${a.customerCount===1?"":"s"}. Raise it and all ${a.count} question${a.count===1?"":"s"} get linked to it.</div>
+            <button class="btn-ochre" data-raise-theme="1">Raise request</button>
+          </div>
+        </div>`;
+    } else if (a.kind === "first"){
+      body = `<h2 class="answer-headline">Nothing covers this, and no one's asked it before.</h2>
+        <div class="answer-card first-ask-body">
+          <p>Your question is logged. It won't sit in a backlog. If someone else asks something similar, the two will show up together as a theme under <b>Asked for, but not tracked</b>.</p>
+          <div style="display:flex;gap:10px;">
+            <button class="btn-secondary" data-raise-first="1">Raise it anyway</button>
+            <button class="btn-link" data-rephrase="1">Rephrase</button>
+          </div>
+        </div>`;
+    }
+
+    return `<div class="answer-screen"><div class="answer-col">
+      <div class="answer-echo-wrap">
+        <div class="answer-echo"><div class="q-text">${escapeHtml(a.text)}</div>${a.customer ? `<div class="who-chip">${escapeHtml(a.customer)}</div>` : ""}</div>
+        <div class="answer-helper">Answers only come from what's logged here. Tagging a customer counts their ask.</div>
+      </div>
+      ${body}
+      ${recent.length ? `<div class="earlier-today">
+        <div class="label">Earlier today</div>
+        ${recent.map(f => `<div class="earlier-row"><div class="q">"${escapeHtml(f.text)}"</div><div class="result${f.requestId?' linked':''}" ${f.requestId?`data-go-req="${f.requestId}"`:""}>${recentAskSummary(f)}</div></div>`).join("")}
+      </div>` : ""}
+    </div></div>`;
+  }
+  function recentAskSummary(f){
+    if (f.kind === "match" || f.kind === "faq"){
+      const r = f.requestId ? state.requests.find(x => x.id === f.requestId) : null;
+      return r ? `→ ${escapeHtml(r.title)}` : "logged";
+    }
+    if (f.kind === "list") return escapeHtml(f.summary || "");
+    if (f.kind === "theme") return `${f.count} similar question${f.count===1?"":"s"}`;
+    return "logged";
+  }
+  function rankOf(r){
+    if (isShipped(r)) return null;
+    const open = state.requests.filter(x => !isShipped(x)).sort((a,b) => scoreOf(b) - scoreOf(a));
+    const idx = open.findIndex(x => x.id === r.id);
+    return idx >= 0 ? idx + 1 : null;
+  }
+
+  function renderListAnswer(a){
+    return `<div class="list-answer-screen">
+      <div class="list-answer-header">
+        <div>
+          <h1 class="list-answer-title">${a.title}</h1>
+          <div class="mono-meta" style="margin-top:6px;">${a.meta}</div>
+        </div>
+        <div class="list-answer-actions">
+          <button class="btn-secondary" data-nav-go="requests">Open in Requests</button>
+          <button class="btn-primary" data-save-view="1">Save as view</button>
+        </div>
+      </div>
+      <div class="list-answer-grid">
+        ${a.cards.map(c => `
+          <div class="lookup-card${c.dashed ? " dashed" : ""}">
+            <div class="lookup-card-head">
+              <div class="h-title${c.muted ? " muted" : ""}">${escapeHtml(c.title)}</div>
+              ${c.headMeta ? `<div class="h-meta ${c.headMetaCls||""}">${escapeHtml(c.headMeta)}</div>` : ""}
+            </div>
+            ${c.rows.length ? c.rows.map(row => `<div class="lookup-row" data-open-req="${row.id}"><div class="r-title">${escapeHtml(row.title)}</div><div class="r-sub" style="color:${row.subColor};">${row.sub}</div></div>`).join("")
+              : `<div class="lookup-row" style="cursor:default;"><div class="r-sub" style="color:var(--ink-faint);">Nothing here yet.</div></div>`}
+            ${c.footer ? `<div class="lookup-card-footer">${escapeHtml(c.footer)}</div>` : ""}
+          </div>`).join("")}
+      </div>
+      ${a.quickChips && a.quickChips.length ? `<div class="other-ways">
+        <div class="label">Other ways to ask</div>
+        <div class="other-ways-chips">${a.quickChips.map(c => `<button data-quick-ask="${escapeHtml(c)}">${escapeHtml(c)}</button>`).join("")}</div>
+      </div>` : ""}
+    </div>`;
+  }
+
+  // =====================================================================
+  //  Requests screen (2b)
+  // =====================================================================
+  const SCORE_PART_COLORS = ["var(--rust)", "var(--teal)", "var(--ochre)", "var(--ink)", "var(--rule-strong)"];
+  function scorePartsArray(r){
+    const p = computeScoreParts(r);
+    return [
+      { name: "urgency", label: p.urgencyPart > 0 ? `${r.urgency.charAt(0).toUpperCase()+r.urgency.slice(1)} urgency` : "No urgency", val: p.urgencyPart, color: SCORE_PART_COLORS[0] },
+      { name: "customers", label: `${r.customers.length} customer${r.customers.length===1?"":"s"}`, val: p.customerPart, color: SCORE_PART_COLORS[1] },
+      { name: "questions", label: `${r.questionCount} question${r.questionCount===1?"":"s"}`, val: p.questionPart, color: SCORE_PART_COLORS[2] },
+      { name: "due", label: r.dueDate ? dueLabel(r.dueDate).replace(/^./, c=>c.toUpperCase()) : "No due date", val: p.duePart, color: SCORE_PART_COLORS[3] },
+      { name: "age", label: `${Math.floor((Date.now()-r.createdAt)/86400000)} days old`, val: p.agePart, color: SCORE_PART_COLORS[4] },
+    ];
+  }
+  function groupRequestsFor(list, group){
+    if (group === "none") return [{ key: null, items: list }];
+    const groups = {};
+    list.forEach(r => {
+      let key;
+      if (group === "urgency") key = r.urgency || "unset";
+      else if (group === "topic") key = r.topic || "untagged";
+      else if (group === "quarter") key = r.quarter || "Unscheduled";
+      else key = "all";
+      (groups[key] = groups[key] || []).push(r);
+    });
+    let keys = Object.keys(groups);
+    if (group === "urgency") keys = ["high","medium","low"].filter(k => groups[k]).concat(keys.filter(k => !["high","medium","low"].includes(k)));
+    else if (group === "quarter") keys = keys.filter(k => parseQuarterSort(k) >= 0).sort((a,b) => parseQuarterSort(a) - parseQuarterSort(b)).concat(keys.filter(k => parseQuarterSort(k) < 0));
+    else keys.sort((a,b) => groups[b].reduce((s,r)=>s+r.questionCount,0) - groups[a].reduce((s,r)=>s+r.questionCount,0));
+    return keys.map(k => ({ key: k, items: groups[k] }));
+  }
+  function groupMeta(group, key, items){
+    if (group === "quarter"){
+      if (key === "Unscheduled" || parseQuarterSort(key) < 0) return { text: "not scheduled", color: "var(--ink-faint)" };
+      const ends = quarterEndsWithinDays(key, 9999);
+      if (ends !== null && ends >= 0 && ends <= 14) return { text: `ends in ${ends} day${ends===1?"":"s"}`, color: "var(--rust)" };
+      const starts = quarterStartsLabel(key);
+      return { text: starts || "", color: "var(--ink-soft)" };
+    }
+    return { text: "", color: "var(--ink-soft)" };
+  }
+  function groupLabel(group, key){
+    if (group === "urgency") return key === "unset" ? "No urgency set" : key.charAt(0).toUpperCase()+key.slice(1);
+    if (group === "topic") return key === "untagged" ? "Untagged" : key.charAt(0).toUpperCase()+key.slice(1);
+    if (group === "quarter") return key;
+    return "All open requests · by priority score";
+  }
+  function renderRequestsScreen(){
+    const rc = state.requestsControls;
+    const visible = rc.shippedFilter === "hide" ? state.requests.filter(r => !isShipped(r))
+      : rc.shippedFilter === "only" ? state.requests.filter(r => isShipped(r))
+      : state.requests;
+    const sorted = visible.slice().sort((a,b) => scoreOf(b) - scoreOf(a));
+    const groups = groupRequestsFor(sorted, rc.group);
+    const maxTotal = Math.max(1, ...sorted.map(r => scoreOf(r)));
+
+    const toolbar = `<div class="requests-toolbar">
+      <div class="requests-title">Requests</div>
+      <div class="control-group"><div class="control-label">Group by</div>
+        <div class="segmented" data-seg="group">
+          ${["quarter","urgency","topic","none"].map(g => `<button data-val="${g}" class="${rc.group===g?"active":""}">${g==="none"?"None":g.charAt(0).toUpperCase()+g.slice(1)}</button>`).join("")}
+        </div>
+      </div>
+      <div class="control-group"><div class="control-label">Layout</div>
+        <div class="segmented" data-seg="layout">
+          ${["list","ledger"].map(l => `<button data-val="${l}" class="${rc.layout===l?"active":""}">${l.charAt(0).toUpperCase()+l.slice(1)}</button>`).join("")}
+        </div>
+      </div>
+      <div class="req-toolbar-spacer"></div>
+      <select class="plain-select" id="shippedFilterSelect">
+        <option value="hide" ${rc.shippedFilter==="hide"?"selected":""}>Shipped: hidden</option>
+        <option value="all" ${rc.shippedFilter==="all"?"selected":""}>Shipped: included</option>
+        <option value="only" ${rc.shippedFilter==="only"?"selected":""}>Shipped: only</option>
+      </select>
+      <div class="views-menu">
+        <button class="views-menu-btn" id="viewsMenuBtn">Views ▾</button>
+        <div class="views-menu-list" id="viewsMenuList">
+          ${state.views.map(v => `<button data-load-view="${v.id}"><span>${escapeHtml(v.name)}</span>${v.builtin?"":`<span class="del" data-del-view="${v.id}">&#10005;</span>`}</button>`).join("")}
+          <hr>
+          <button data-save-view-open="1">+ Save current as view…</button>
+        </div>
+      </div>
+      <button class="new-request-link" id="newRequestBtn">+ New request</button>
+    </div>`;
+
+    if (state.requests.length === 0) return toolbar + `<div class="screen-empty">No feature requests yet. Ask what customers want in the box above.</div>`;
+    if (visible.length === 0) return toolbar + `<div class="screen-empty">${rc.shippedFilter === "only" ? "Nothing shipped yet." : "Nothing here — everything's shipped."}</div>`;
+
+    const legend = rc.layout === "ledger" ? `<div class="ledger-legend">
+      <div class="item"><div class="swatch" style="background:var(--rust);"></div>Urgency</div>
+      <div class="item"><div class="swatch" style="background:var(--teal);"></div>Customers</div>
+      <div class="item"><div class="swatch" style="background:var(--ochre);"></div>Questions</div>
+      <div class="item"><div class="swatch" style="background:var(--ink);"></div>Due soon</div>
+      <div class="item"><div class="swatch" style="background:var(--rule-strong);"></div>Age</div>
+    </div>` : "";
+
+    const body = `<div class="req-groups">${groups.map(g => {
+      const meta = rc.group === "quarter" ? groupMeta(rc.group, g.key, g.items) : { text: "", color: "" };
+      return `<div>
+        <div class="req-group-head">
+          <div class="g-name">${escapeHtml(groupLabel(rc.group, g.key))}</div>
+          <div class="mono-meta">${g.items.length}</div>
+          ${meta.text ? `<div class="g-meta" style="color:${meta.color};">${meta.text}</div>` : ""}
+        </div>
+        ${g.items.map(r => renderRequestRow(r, rc.layout, maxTotal)).join("")}
+      </div>`;
+    }).join("")}</div>`;
+
+    return toolbar + legend + body;
+  }
+  function renderRequestRow(r, layout, maxTotal){
+    const dueTxt = r.dueDate ? dueLabel(r.dueDate) : "no due date";
+    const dueSoon = isDueSoon(r) || (r.dueDate && daysUntil(r.dueDate) < 0);
+    const custStr = r.customers.length > 2 ? `${r.customers.slice(0,2).join(", ")} +${r.customers.length-2}` : r.customers.join(", ");
+    let midCol;
+    if (layout === "ledger"){
+      const parts = scorePartsArray(r);
+      midCol = `<div class="r-ledger-bar">${parts.map(p => `<div class="seg" style="width:${Math.max(0,(p.val/maxTotal*100))}%;background:${p.color};" title="${escapeHtml(p.label)}"></div>`).join("")}</div>`;
+    } else {
+      midCol = `<div class="r-list-cols">
+        <div class="col-status" style="color:${statusColor(r.status)};">${escapeHtml(statusLabel(r.status))}</div>
+        <div class="col-urgency">${escapeHtml(r.urgency ? r.urgency.charAt(0).toUpperCase()+r.urgency.slice(1) : "—")}</div>
+        <div class="col-topic">${escapeHtml(r.topic ? r.topic.charAt(0).toUpperCase()+r.topic.slice(1) : "—")}</div>
+        <div>${r.questionCount} question${r.questionCount===1?"":"s"}</div>
+      </div>`;
+    }
+    return `<div class="req-row" data-open-req="${r.id}">
+      <div class="r-main"><div class="r-title">${escapeHtml(r.title)}</div><div class="r-customers">${escapeHtml(custStr) || "no customers logged"}</div></div>
+      ${midCol}
+      <div class="r-due${dueSoon?" soon":""}">${escapeHtml(dueTxt)}</div>
+    </div>`;
+  }
+
+  // =====================================================================
+  //  Trends (3a)
+  // =====================================================================
+  function renderTrendsScreen(){
+    const clusters = clusterUnmatchedQuestions();
+    const topAsked = state.requests.slice().sort((a,b) => b.questionCount - a.questionCount).filter(r => r.questionCount > 0).slice(0,4);
+    const maxCount = Math.max(1, ...topAsked.map(r => r.questionCount));
+    const multiCustomerReqs = state.requests.filter(r => r.customers.length > 1).sort((a,b) => b.customers.length - a.customers.length).slice(0,3);
+    const custIndex = Array.from(customerRequestIndex().entries()).filter(([,reqs]) => reqs.length > 1).sort((a,b) => b[1].length - a[1].length).slice(0,3);
+
+    return `<div class="trends-screen">
+      <div class="trends-header">
+        <h1 class="trends-title">Trends</h1>
+        <div class="mono-meta">${state.questions.length} questions · ${state.requests.length} requests · ${knownCustomers().length} customers</div>
+      </div>
+      <div class="trends-grid">
+        <div class="trends-col">
+          <div class="trends-eyebrow-row"><div class="eyebrow" style="color:var(--ochre);">Asked for, but not tracked</div><div class="mono-meta" style="font-family:var(--font-body);">${clusters.length} theme${clusters.length===1?"":"s"}</div></div>
+          ${clusters.length ? clusters.map((c,i) => {
+            const custCount = new Set(c.items.map(q => parseCustomerFromText(q.text)).filter(Boolean)).size || 1;
+            return i === 0 ? `<div class="theme-card" style="padding:20px 22px;">
+              <div class="row-between"><div class="theme-title" style="font-size:20px;">${escapeHtml(clusterLabel(c))}</div><div style="font-size:13.5px;color:var(--ochre-text-2);"><b>${c.items.length}</b> question${c.items.length===1?"":"s"} · <b>${custCount}</b> customer${custCount===1?"":"s"}</div></div>
+              <div style="display:flex;flex-direction:column;gap:6px;font-size:14.5px;color:var(--ochre-text-4);">
+                ${c.items.slice(0,4).map(q => `<div>"${escapeHtml(q.text)}" <span style="color:var(--ochre-text-5);">${escapeHtml(parseCustomerFromText(q.text)||"")}</span></div>`).join("")}
+              </div>
+              <div style="display:flex;gap:10px;align-items:center;">
+                <button class="btn-ochre" data-raise-cluster-idx="${i}">Raise request</button>
+                <div style="font-size:13px;color:var(--ochre-text-2);">Links all ${c.items.length} questions</div>
+              </div>
+            </div>` : `<div class="lookup-card dashed" style="padding:18px 22px;display:flex;flex-direction:column;gap:10px;">
+              <div class="row-between"><div class="theme-title">${escapeHtml(clusterLabel(c))}</div><div style="font-size:13.5px;color:var(--ochre-text-2);"><b>${c.items.length}</b> question${c.items.length===1?"":"s"} · <b>${custCount}</b> customer${custCount===1?"":"s"}</div></div>
+              <div style="display:flex;flex-direction:column;gap:6px;font-size:14px;color:var(--ochre-text-4);">
+                ${c.items.slice(0,3).map(q => `<div>"${escapeHtml(q.text)}" <span style="color:var(--ochre-text-5);">${escapeHtml(parseCustomerFromText(q.text)||"")}</span></div>`).join("")}
+              </div>
+              <button class="theme-cta" data-raise-cluster-idx="${i}">Raise request →</button>
+            </div>`;
+          }).join("") : `<div class="badge">No recurring untracked themes right now.</div>`}
+          <div class="trends-footnote">A question shows up here only once someone asks something similar. One-off questions stay logged, not listed.</div>
+        </div>
+        <div class="trends-col">
+          <div>
+            <div class="eyebrow" style="color:var(--ink-soft);margin-bottom:10px;">Where questions pile up</div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              ${topAsked.length ? topAsked.map(r => {
+                const shippedRecently = isShipped(r) && r.shippedAt && state.questions.some(q => q.matchedRequestId === r.id && q.createdAt > r.shippedAt);
+                return `<div class="pile-up-row" data-open-req="${r.id}" style="cursor:pointer;">
+                  <div class="name">${escapeHtml(r.title)}${shippedRecently ? `<span class="shipped-tag">shipped</span>` : ""}</div>
+                  <div class="bar" style="width:${Math.max(4,r.questionCount/maxCount*100)}%;background:${shippedRecently ? "var(--rust)" : "var(--teal)"};"></div>
+                  <div class="count">${r.questionCount}</div>
+                </div>`;
+              }).join("") : `<div class="badge">No questions logged against a request yet.</div>`}
+            </div>
+            ${topAsked.filter(r => isShipped(r) && r.shippedAt && state.questions.some(q => q.matchedRequestId === r.id && q.createdAt > r.shippedAt)).map(r => `
+              <div class="pile-up-callout"><b>${escapeHtml(r.title)} shipped in ${escapeHtml(r.quarter||"")}</b> but people are still asking about it. It's probably hard to find, not missing.</div>
+            `).join("")}
+          </div>
+          <div class="side-lists">
+            <div class="side-list">
+              <div class="side-list-head">Shared asks</div>
+              ${multiCustomerReqs.length ? multiCustomerReqs.map(r => `<div class="side-list-row" data-open-req="${r.id}"><div>${escapeHtml(r.title)}</div><div class="count">${r.customers.length}</div></div>`).join("") : `<div class="badge">None yet.</div>`}
+              <div class="side-list-caption">customers per request</div>
+            </div>
+            <div class="side-list">
+              <div class="side-list-head">Asks the most</div>
+              ${custIndex.length ? custIndex.map(([name,reqs]) => `<div class="side-list-row" data-go-cust="${escapeHtml(name)}"><div>${escapeHtml(name)}</div><div class="count">${reqs.length}</div></div>`).join("") : `<div class="badge">None yet.</div>`}
+              <div class="side-list-caption">requests per customer</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // =====================================================================
+  //  Request modal (3b)
+  // =====================================================================
+  function openRequestDetail(id){
+    closeOverlay("detailOverlay");
+    const r = state.requests.find(x => x.id === id);
+    if (!r) return;
+    const linkedQ = state.questions.filter(q => q.matchedRequestId === id).sort((a,b) => b.createdAt - a.createdAt);
+    const showCount = 3;
+    const rank = rankOf(r);
+    const parts = scorePartsArray(r);
+    const maxPart = Math.max(0.0001, ...parts.map(p => p.val));
+    const total = parts.reduce((s,p) => s+p.val, 0) || 1;
+    const modal = document.getElementById("detailModal");
+    modal.classList.add("req-modal");
+    modal.innerHTML = `
+      <div class="req-modal-panes">
+        <div class="req-modal-left">
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            ${rank ? `<div class="eyebrow rank-eyebrow">#${rank} on Now</div>` : `<div class="badge">Shipped${r.shippedAt ? " " + new Date(r.shippedAt).toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"}) : ""}</div>`}
+            <input type="text" id="editTitle" class="req-title-input" value="${escapeHtml(r.title)}" />
+            <textarea id="editDescription" class="req-desc-input">${escapeHtml(r.description)}</textarea>
+          </div>
+          <div>
+            <div class="rank-why-row"><div class="lbl">Why it ranks here</div><button class="adjust-link" id="adjustWeightsBtn">Adjust weights</button></div>
+            <div class="score-bar" style="margin-top:10px;">${parts.map(p => `<div class="seg" style="width:${Math.max(0,p.val/total*100)}%;background:${p.color};"></div>`).join("")}</div>
+            <div class="score-parts-grid" style="margin-top:10px;">
+              ${parts.map(p => `<div><div class="part-name" style="color:${p.color};">${escapeHtml(p.label)}</div><div class="part-val">+${p.val.toFixed(1)}</div></div>`).join("")}
+            </div>
+          </div>
+          <div>
+            <div class="section-label">Customers asking (${r.customers.length})</div>
+            <div class="cust-chip-row" id="customerChips" style="margin-top:10px;">
+              ${r.customers.map((c,i) => `<span class="cust-chip">${escapeHtml(c)}<span class="x" data-remove-cust="${i}" title="Remove">&#10005;</span></span>`).join("")}
+              <button class="cust-chip-add" id="addCustomerToggle">+ Add</button>
+              <input type="text" id="addCustomerInput" class="cust-add-input" placeholder="Customer name, press Enter" />
+            </div>
+          </div>
+          <div style="min-height:0;">
+            <div class="section-label">Questions linked to this (${linkedQ.length})</div>
+            ${linkedQ.slice(0, showCount).map(q => `<div class="linked-q-row"><div>"${escapeHtml(q.text)}"</div><div class="meta">${escapeHtml(parseCustomerFromText(q.text)||"")}${parseCustomerFromText(q.text)?" · ":""}${ageLabel(q.createdAt)}</div></div>`).join("")}
+            ${linkedQ.length === 0 ? `<div class="badge" style="padding:9px 0;">No questions logged against this yet.</div>` : ""}
+            ${linkedQ.length > showCount ? `<button class="show-more-link" id="showMoreLinkedQ">Show ${linkedQ.length - showCount} more</button>` : ""}
+          </div>
+        </div>
+        <div class="req-modal-right">
+          <div class="close-row"><button class="close-x" style="position:static;" data-close="detailOverlay">&#10005;</button></div>
+          <div class="prop-row">
+            <div class="p-label">Status ${customStatuses().length ? `<span class="src" id="manageStatusesLink" style="font-size:11px;">(manage)</span>` : ""}</div>
+            <div class="p-value" style="color:${statusColor(r.status)};">${escapeHtml(statusLabel(r.status))} ▾</div>
+            <select class="prop-select" id="editStatus">${addableOptionsHtml(knownValuesFor("status", STATUS_ORDER), r.status, false, statusLabel)}</select>
+          </div>
+          <input type="text" id="newStatusInput" class="add-new-inline" placeholder="e.g. Blocked" />
+          <div class="prop-row">
+            <div class="p-label">Urgency</div>
+            <div class="p-value">${r.urgency ? r.urgency.charAt(0).toUpperCase()+r.urgency.slice(1) : "—"} ▾</div>
+            <select class="prop-select" id="editUrgency">
+              <option value="high" ${r.urgency==='high'?'selected':''}>High</option>
+              <option value="medium" ${r.urgency==='medium'?'selected':''}>Medium</option>
+              <option value="low" ${r.urgency==='low'?'selected':''}>Low</option>
+            </select>
+          </div>
+          <div class="prop-row">
+            <div class="p-label">Quarter</div>
+            <div class="p-value">${escapeHtml(r.quarter || "None")} ▾</div>
+            <select class="prop-select" id="editQuarter">${(function(){ const qs = knownQuarters(); if (!qs.includes(r.quarter)) qs.push(r.quarter); return addableOptionsHtml(qs, r.quarter, false, q=>q); })()}</select>
+          </div>
+          <input type="text" id="newQuarterInput" class="add-new-inline" placeholder="e.g. Q1 2028" />
+          <div class="prop-row">
+            <div class="p-label">Due</div>
+            <div class="p-value" style="color:${r.dueDate && daysUntil(r.dueDate)<=3 ? 'var(--rust)':'var(--ink)'};">${r.dueDate ? new Date(r.dueDate).toLocaleDateString(undefined,{month:"short",day:"numeric"}) + " · " + dueLabel(r.dueDate) : "None"}</div>
+          </div>
+          <div style="padding:0 0 12px;"><input type="date" id="editDueDate" value="${r.dueDate ? new Date(r.dueDate).toISOString().slice(0,10) : ""}" style="width:100%;font-family:var(--font-body);font-size:13px;padding:6px 8px;border-radius:6px;border:1px solid var(--rule-strong);background:var(--paper);color:var(--ink);" /></div>
+          <div class="prop-row">
+            <div class="p-label">Topic ${customTopics().length ? `<span class="src" id="manageTopicsLink" style="font-size:11px;">(manage)</span>` : ""}</div>
+            <div class="p-value">${escapeHtml(r.topic ? r.topic.charAt(0).toUpperCase()+r.topic.slice(1) : "None")} ▾</div>
+            <select class="prop-select" id="editTopic">${addableOptionsHtml(knownValuesFor("topic"), r.topic, true)}</select>
+          </div>
+          <input type="text" id="newTopicInput" class="add-new-inline" placeholder="e.g. billing" />
+          <div class="prop-row" style="border-bottom:none;">
+            <div class="p-label">Score</div>
+            <div class="p-value mono">${scoreOf(r).toFixed(1)}</div>
+          </div>
+          <div class="spacer"></div>
+          ${!isShipped(r) ? `<button class="btn-teal" id="markShipped" style="width:100%;text-align:center;">Mark as shipped</button>
+            <div class="ship-caption">Moves it off Now. The ${linkedQ.length} linked question${linkedQ.length===1?"":"s"} will show as answered.</div>`
+            : `<div class="badge" style="text-align:center;">Answered by this feature</div>`}
+        </div>
+      </div>
+      <div class="req-modal-footer">
+        <button class="delete-link" id="deleteRequestBtn">Delete request</button>
+        <div class="mono-meta">Saved automatically</div>
+      </div>`;
+    wireRequestModal(r, id, showCount, linkedQ);
+    openOverlay("detailOverlay");
+  }
+  function wireRequestModal(r, id, showCount, linkedQ){
+    const modal = document.getElementById("detailModal");
+    modal.querySelectorAll("[data-close]").forEach(el => el.onclick = () => { closeOverlay("detailOverlay"); modal.classList.remove("req-modal"); render(); });
+    const manageLink = modal.querySelector("#manageStatusesLink");
+    if (manageLink) manageLink.onclick = () => openManageStatuses();
+    const manageTopicsLink = modal.querySelector("#manageTopicsLink");
+    if (manageTopicsLink) manageTopicsLink.onclick = () => openManageTopics();
+    modal.querySelector("#adjustWeightsBtn").onclick = () => openWeightsOverlay();
+
+    const titleEl = document.getElementById("editTitle");
+    const descEl = document.getElementById("editDescription");
+    titleEl.addEventListener("blur", () => {
+      const val = titleEl.value.trim() || "Untitled request";
+      if (val !== r.title){ r.title = val; r.updatedAt = Date.now(); saveState(); }
+    });
+    descEl.addEventListener("blur", () => {
+      const val = descEl.value.trim();
+      if (val !== r.description){ r.description = val; r.updatedAt = Date.now(); saveState(); }
+    });
+
+    function fieldCommitter(field, allowEmpty){
+      return (val, isNew) => {
+        r[field] = (allowEmpty && val === "") ? null : val;
+        r.updatedAt = Date.now(); saveState();
+        openRequestDetail(id);
+      };
+    }
+    wireAddableSelect(document.getElementById("editStatus"), document.getElementById("newStatusInput"), (val, isNew) => {
+      const wasShipped = isShipped(r);
+      r.status = val; r.updatedAt = Date.now();
+      if (isShipped(r) && !wasShipped) r.shippedAt = Date.now();
+      if (!isShipped(r)) r.shippedAt = null;
+      saveState(); openRequestDetail(id);
+    });
+    wireAddableSelect(document.getElementById("editQuarter"), document.getElementById("newQuarterInput"), fieldCommitter("quarter", false));
+    wireAddableSelect(document.getElementById("editTopic"), document.getElementById("newTopicInput"), fieldCommitter("topic", true));
+    document.getElementById("editUrgency").onchange = () => { r.urgency = document.getElementById("editUrgency").value; r.updatedAt = Date.now(); saveState(); openRequestDetail(id); };
+    document.getElementById("editDueDate").onchange = (e) => {
+      r.dueDate = e.target.value ? new Date(e.target.value + "T00:00:00").getTime() : null;
+      r.updatedAt = Date.now(); saveState(); openRequestDetail(id);
+    };
+
+    modal.querySelectorAll("[data-remove-cust]").forEach(el => {
+      el.onclick = (ev) => {
+        ev.stopPropagation();
+        r.customers.splice(+el.getAttribute("data-remove-cust"), 1);
+        r.updatedAt = Date.now(); saveState(); openRequestDetail(id);
+      };
+    });
+    const addToggle = document.getElementById("addCustomerToggle");
+    const addInput = document.getElementById("addCustomerInput");
+    addToggle.onclick = () => { addToggle.style.display = "none"; addInput.style.display = "inline-block"; addInput.focus(); };
+    function commitAddCustomer(){
+      const val = addInput.value.trim();
+      if (!val) return;
+      if (r.customers.some(c => c.toLowerCase() === val.toLowerCase())) { addInput.value = ""; return; }
+      r.customers.push(val); r.updatedAt = Date.now(); saveState();
+      openRequestDetail(id);
+    }
+    addInput.addEventListener("keydown", e => { if (e.key === "Enter"){ e.preventDefault(); commitAddCustomer(); } });
+    addInput.addEventListener("blur", commitAddCustomer);
+
+    const showMore = document.getElementById("showMoreLinkedQ");
+    if (showMore) showMore.onclick = () => {
+      const container = showMore.parentElement;
+      const rest = linkedQ.slice(showCount);
+      showMore.insertAdjacentHTML("beforebegin", rest.map(q => `<div class="linked-q-row"><div>"${escapeHtml(q.text)}"</div><div class="meta">${escapeHtml(parseCustomerFromText(q.text)||"")}${parseCustomerFromText(q.text)?" · ":""}${ageLabel(q.createdAt)}</div></div>`).join(""));
+      showMore.remove();
+    };
+
+    const shipBtn = modal.querySelector("#markShipped");
+    if (shipBtn) shipBtn.onclick = () => { r.status = "shipped"; r.shippedAt = Date.now(); r.updatedAt = Date.now(); saveState(); openRequestDetail(id); };
+    modal.querySelector("#deleteRequestBtn").onclick = () => {
+      if (!confirm(`Permanently delete "${r.title}"? This can't be undone. Its ${linkedQ.length} linked question${linkedQ.length===1?"":"s"} will stay logged but unlinked.`)) return;
+      state.requests = state.requests.filter(x => x.id !== id);
+      state.questions.forEach(q => { if (q.matchedRequestId === id) q.matchedRequestId = null; });
+      saveState(); closeOverlay("detailOverlay"); modal.classList.remove("req-modal"); render();
+    };
+  }
+
+  // ---------------- Priority weights (unchanged) ----------------
   function openWeightsOverlay(){
     const w = state.scoreWeights;
     const modal = document.getElementById("detailModal");
+    modal.classList.remove("req-modal");
     modal.innerHTML = `
       <button class="close-x" data-close="detailOverlay">&#10005;</button>
       <h2>Priority score weights</h2>
-      <div class="modal-sub">How much each signal counts toward the combined score on the Today view. Higher weight = bigger influence. Changes apply immediately.</div>
+      <div class="modal-sub">How much each signal counts toward the combined score used to rank Now / Requests / the ledger. Higher weight = bigger influence. Changes apply immediately.</div>
       <div class="field-row">
         <div class="field"><label>Urgency</label><input type="text" inputmode="decimal" id="wUrgency" value="${w.urgency}" /></div>
         <div class="field"><label>Customers</label><input type="text" inputmode="decimal" id="wCustomers" value="${w.customers}" /></div>
@@ -938,8 +1620,8 @@
         <button class="btn-secondary" id="resetWeights">Reset to default</button>
         <button class="btn-primary" id="saveWeights">Done</button>
       </div>`;
-    modal.querySelector("[data-close]").onclick = () => closeOverlayHandled("detailOverlay");
-    modal.querySelector("#resetWeights").onclick = () => { state.scoreWeights = { urgency: 3, customers: 2, questions: 1.5, age: 0.03, dueDate: 1 }; saveState(); openWeightsOverlay(); render(); };
+    modal.querySelector("[data-close]").onclick = () => { closeOverlay("detailOverlay"); render(); };
+    modal.querySelector("#resetWeights").onclick = () => { state.scoreWeights = defaultScoreWeights(); saveState(); openWeightsOverlay(); };
     modal.querySelector("#saveWeights").onclick = () => {
       const num = (id, fallback) => { const v = parseFloat(document.getElementById(id).value); return isFinite(v) ? v : fallback; };
       state.scoreWeights = {
@@ -951,12 +1633,9 @@
     openOverlay("detailOverlay");
   }
 
-  // Only custom statuses (not the four built-ins) show up here — see
-  // customStatuses(). Renaming rewrites it on every request that has it;
-  // deleting moves those requests back to "New" rather than leaving them
-  // pointed at a status that no longer exists anywhere in the UI.
   function openManageStatuses(){
     const modal = document.getElementById("detailModal");
+    modal.classList.remove("req-modal");
     const customs = customStatuses();
     modal.innerHTML = `
       <button class="close-x" data-close="detailOverlay">&#10005;</button>
@@ -973,15 +1652,15 @@
         </div>`;
       }).join("") : `<div class="badge">No custom statuses in use.</div>`}
       <div class="modal-actions"><button class="btn-primary" id="closeManageStatuses">Done</button></div>`;
-    modal.querySelector("[data-close]").onclick = () => closeOverlayHandled("detailOverlay");
-    modal.querySelector("#closeManageStatuses").onclick = () => closeOverlayHandled("detailOverlay");
+    modal.querySelector("[data-close]").onclick = () => { closeOverlay("detailOverlay"); render(); };
+    modal.querySelector("#closeManageStatuses").onclick = () => { closeOverlay("detailOverlay"); render(); };
     modal.querySelectorAll("[data-rename-status]").forEach(input => {
       const commit = () => {
         const oldVal = input.getAttribute("data-rename-status");
         const newVal = input.value.trim();
         if (!newVal || newVal === oldVal) { input.value = oldVal; return; }
         state.requests.forEach(r => { if (r.status === oldVal) { r.status = newVal; r.updatedAt = Date.now(); } });
-        saveState(); openManageStatuses(); render();
+        saveState(); openManageStatuses();
       };
       input.addEventListener("keydown", e => { if (e.key === "Enter"){ e.preventDefault(); commit(); } });
       input.addEventListener("blur", commit);
@@ -992,19 +1671,14 @@
         const count = state.requests.filter(r => r.status === val).length;
         if (!confirm(`Delete status "${val}"? ${count} request${count===1?"":"s"} using it will move back to "New".`)) return;
         state.requests.forEach(r => { if (r.status === val) { r.status = "new"; r.updatedAt = Date.now(); } });
-        saveState(); openManageStatuses(); render();
+        saveState(); openManageStatuses();
       };
     });
     openOverlay("detailOverlay");
   }
-
-  // Same mechanism as openManageStatuses(), with two differences that follow
-  // from topic having no built-in presets: every value in use is manageable
-  // (see customTopics()), and deleting one clears the field to "None" (null)
-  // rather than falling back to a specific value — that's already topic's
-  // normal "untagged" state, wired up in the Topic dropdown itself.
   function openManageTopics(){
     const modal = document.getElementById("detailModal");
+    modal.classList.remove("req-modal");
     const customs = customTopics();
     modal.innerHTML = `
       <button class="close-x" data-close="detailOverlay">&#10005;</button>
@@ -1021,15 +1695,15 @@
         </div>`;
       }).join("") : `<div class="badge">No topics in use.</div>`}
       <div class="modal-actions"><button class="btn-primary" id="closeManageTopics">Done</button></div>`;
-    modal.querySelector("[data-close]").onclick = () => closeOverlayHandled("detailOverlay");
-    modal.querySelector("#closeManageTopics").onclick = () => closeOverlayHandled("detailOverlay");
+    modal.querySelector("[data-close]").onclick = () => { closeOverlay("detailOverlay"); render(); };
+    modal.querySelector("#closeManageTopics").onclick = () => { closeOverlay("detailOverlay"); render(); };
     modal.querySelectorAll("[data-rename-topic]").forEach(input => {
       const commit = () => {
         const oldVal = input.getAttribute("data-rename-topic");
         const newVal = input.value.trim();
         if (!newVal || newVal === oldVal) { input.value = oldVal; return; }
         state.requests.forEach(r => { if (r.topic === oldVal) { r.topic = newVal; r.updatedAt = Date.now(); } });
-        saveState(); openManageTopics(); render();
+        saveState(); openManageTopics();
       };
       input.addEventListener("keydown", e => { if (e.key === "Enter"){ e.preventDefault(); commit(); } });
       input.addEventListener("blur", commit);
@@ -1040,294 +1714,25 @@
         const count = state.requests.filter(r => r.topic === val).length;
         if (!confirm(`Delete topic "${val}"? ${count} request${count===1?"":"s"} using it will move back to "None".`)) return;
         state.requests.forEach(r => { if (r.topic === val) { r.topic = null; r.updatedAt = Date.now(); } });
-        saveState(); openManageTopics(); render();
+        saveState(); openManageTopics();
       };
     });
     openOverlay("detailOverlay");
   }
 
-  // ---------------- Trends ----------------
-  // Loose clustering of unmatched questions by shared stemmed words — greedy,
-  // no ML: a question joins the first existing cluster it overlaps >=2 words
-  // with, otherwise it starts a new one. This is the same stem()/overlap()
-  // machinery already used to match questions to requests, just applied
-  // question-to-question instead of question-to-request.
-  function clusterUnmatchedQuestions(){
-    const clusters = [];
-    state.questions.filter(q => !q.matchedRequestId).forEach(q => {
-      const words = stem(q.text);
-      // The join threshold scales down for short questions. A fixed ">= 2"
-      // meant a one-word question (or any two questions that only ever
-      // share one stemmed word) could never cluster with anything — not
-      // even an exact repeat of itself, since a single word can never reach
-      // an overlap of 2. Requiring only min(2, words.length) still needs 2
-      // shared words once there are 2+ to work with (so one coincidental
-      // shared word between otherwise-unrelated questions doesn't cluster
-      // them), but a 1-word question only needs that word to match. Zero
-      // stemmed words (a question that's all stopwords) never joins
-      // anything — there's no real content to compare.
-      const threshold = words.length === 0 ? Infinity : Math.min(2, words.length);
-      const target = clusters.find(c => overlap(new Set(words), c.words) >= threshold);
-      if (target){ target.items.push(q); target.words.push(...words); }
-      else clusters.push({ words: words.slice(), items: [q] });
-    });
-    return clusters.filter(c => c.items.length > 1).sort((a,b) => b.items.length - a.items.length);
-  }
-  function customerRequestIndex(){
-    const map = new Map(); // customer name -> [requests]
-    state.requests.forEach(r => r.customers.forEach(c => {
-      if (!map.has(c)) map.set(c, []);
-      map.get(c).push(r);
-    }));
-    return map;
-  }
-  function renderTrends(){
-    const multiCustomerReqs = state.requests.filter(r => r.customers.length > 1).sort((a,b) => b.customers.length - a.customers.length);
-    const custIndex = Array.from(customerRequestIndex().entries()).filter(([,reqs]) => reqs.length > 1).sort((a,b) => b[1].length - a[1].length);
-    const clusters = clusterUnmatchedQuestions();
-    const topAsked = state.requests.slice().sort((a,b) => b.questionCount - a.questionCount).slice(0,5).filter(r => r.questionCount > 0);
-
-    return `
-      <div class="view-descriptor" style="margin-bottom:18px;">Cross-cutting patterns across everything logged — not tied to any single request.</div>
-
-      <div class="detail-section" style="margin-top:0;border-top:none;padding-top:0;">
-        <h3>Recurring themes without a tracked feature yet (${clusters.length})</h3>
-        ${clusters.length ? clusters.map((c,i) => `
-          <div class="qlink" style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
-            <span>${escapeHtml(c.items[0].text)} <span class="badge">· asked ${c.items.length}× in different words</span></span>
-            <button class="btn" data-raise-cluster="${i}">Raise a feature request</button>
-          </div>`).join("") : `<div class="badge">No recurring untracked themes right now — everything asked more than once maps to an existing request.</div>`}
-      </div>
-
-      <div class="detail-section">
-        <h3>Most-asked-about tracked features</h3>
-        ${topAsked.length ? topAsked.map(r => `
-          <div class="qlink"><span class="src" data-go-req="${r.id}">${escapeHtml(r.title)}</span> <span class="badge">· asked ${r.questionCount}×, ${r.customers.length} customer${r.customers.length===1?"":"s"}</span></div>`).join("")
-          : `<div class="badge">No questions logged against a request yet.</div>`}
-      </div>
-
-      <div class="detail-section">
-        <h3>Features requested by more than one customer (${multiCustomerReqs.length})</h3>
-        ${multiCustomerReqs.length ? multiCustomerReqs.map(r => `
-          <div class="qlink"><span class="src" data-go-req="${r.id}">${escapeHtml(r.title)}</span> <span class="badge">· ${r.customers.length} customers: ${escapeHtml(r.customers.join(", "))}</span></div>`).join("")
-          : `<div class="badge">No request currently has more than one customer attached.</div>`}
-      </div>
-
-      <div class="detail-section">
-        <h3>Customers asking for more than one feature (${custIndex.length})</h3>
-        ${custIndex.length ? custIndex.map(([name, reqs]) => `
-          <div class="qlink">${escapeHtml(name)} <span class="badge">· on ${reqs.length} requests: ${reqLinks(reqs)}</span></div>`).join("")
-          : `<div class="badge">No customer currently appears on more than one request.</div>`}
-      </div>
-    `;
-  }
-  function wireTrendsInteractions(){
-    const clusters = clusterUnmatchedQuestions();
-    mainEl.querySelectorAll("[data-raise-cluster]").forEach(btn => {
-      btn.onclick = () => { const c = clusters[+btn.getAttribute("data-raise-cluster")]; pendingDraftFeedItem = null; openDraftFromText("Raise a feature request for: " + c.items[0].text); };
-    });
-    mainEl.querySelectorAll("[data-go-req]").forEach(el => { el.onclick = () => openRequestDetail(el.getAttribute("data-go-req")); });
-  }
-  function sortLabel(s){ return { customers:"customer count", questions:"question count", age:"creation date", updated:"last updated", urgency:"urgency", title:"title", score:"priority score", dueDate:"due date" }[s] || s; }
-  // "high to low" / "low to high" reads fine for a count or a score, but not
-  // for a date — "age"/"updated" are really creation/update dates ordered
-  // old-to-new/new-to-old.
-  function sortDirLabel(sort, dir){
-    if (sort === "age" || sort === "updated") return dir === "desc" ? "new to old" : "old to new";
-    return dir === "desc" ? "high to low" : "low to high";
-  }
-
-  function renderTable(list, showScore){
-    let rows = list.map(r => `
-      <tr data-open-req="${r.id}">
-        <td class="title-cell">${escapeHtml(r.title)}<div class="sub">${escapeHtml(r.description).slice(0,70)}${r.description.length>70?'…':''}</div></td>
-        <td><span class="status-dot ${STATUS_ORDER.includes(r.status) ? r.status : ''}"></span>${statusLabel(r.status)}</td>
-        <td>${tagChips(r)}</td>
-        <td class="num-cell">${r.customers.length}</td>
-        <td class="num-cell">${r.questionCount}</td>
-        <td class="num-cell">${r.dueDate ? dueLabel(r.dueDate) : `<span class="badge">—</span>`}</td>
-        ${showScore ? `<td class="num-cell" title="${escapeHtml(scoreBreakdownText(r))}">${scoreOf(r).toFixed(1)}</td>` : ""}
-      </tr>`).join("");
-    return `<table class="req-table"><thead><tr><th>Request</th><th>Status</th><th>Tags</th><th>Customers</th><th>Questions</th><th>Due</th>${showScore ? "<th>Score</th>" : ""}</tr></thead><tbody>${rows}</tbody></table>`;
-  }
-  function renderBoard(groups){
-    return `<div class="board">${groups.map(g => `
-      <div class="board-col">
-        <div class="board-col-head"><span>${g.label}</span><span class="badge">${g.items.length}</span></div>
-        ${g.items.map(r => `
-          <div class="board-card" data-open-req="${r.id}">
-            <div class="board-card-title">${escapeHtml(r.title)}</div>
-            ${tagChips(r)}
-            <div class="board-card-meta"><span>${r.customers.length} cust.</span><span>${r.questionCount} asked</span></div>
-          </div>`).join("")}
-      </div>`).join("")}</div>`;
-  }
-  function renderGallery(groups){
-    return groups.map(g => `
-      <div class="gallery-group">
-        <div class="gallery-group-head">${g.label ? g.label : "All requests"} ${g.label ? `<span class="heat">${g.items.reduce((s,r)=>s+r.questionCount,0)} questions</span>` : ""}</div>
-        <div class="gallery-grid">
-          ${g.items.map(r => `
-            <div class="gallery-card" data-open-req="${r.id}">
-              <div class="gallery-card-title">${escapeHtml(r.title)}</div>
-              ${tagChips(r)}
-              <div class="gallery-card-meta"><span>${r.customers.length} cust.</span><span>${r.questionCount} asked</span><span>${ageLabel(r.createdAt)}</span></div>
-            </div>`).join("")}
-        </div>
-      </div>`).join("");
-  }
-  function escapeHtml(s){ return (s||"").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c])); }
-
-  function openOverlay(id){ document.getElementById(id).classList.add("open"); }
-  function closeOverlay(id){ document.getElementById(id).classList.remove("open"); }
-
-  document.querySelectorAll(".overlay").forEach(ov => {
-    let downOnBackdrop = false;
-    ov.addEventListener("mousedown", e => { downOnBackdrop = (e.target === ov); });
-    ov.addEventListener("click", e => { if (e.target === ov && downOnBackdrop) closeOverlayHandled(ov.id); downOnBackdrop = false; });
-  });
-  document.querySelectorAll("[data-close]").forEach(el => { el.onclick = () => closeOverlayHandled(el.getAttribute("data-close")); });
-
-  function closeOverlayHandled(id){
-    closeOverlay(id);
-    if (id === "draftOverlay" && draftHasContent()) showResumeBar();
-    if (id === "detailOverlay") render();
-  }
-  function draftHasContent(){
-    return document.getElementById("dTitle").value.trim() !== "" || document.getElementById("dDesc").value.trim() !== "";
-  }
-  function showResumeBar(){
-    const bar = document.getElementById("resumeDraftBar");
-    document.getElementById("resumeDraftLabel").textContent = "Draft in progress: " + (document.getElementById("dTitle").value.trim() || "untitled request");
-    bar.classList.add("show");
-  }
-  function hideResumeBar(){ document.getElementById("resumeDraftBar").classList.remove("show"); }
-  document.getElementById("resumeDraftBtn").onclick = () => { openOverlay("draftOverlay"); hideResumeBar(); };
-  document.getElementById("discardDraft").onclick = () => {
-    document.getElementById("dTitle").value = ""; document.getElementById("dDesc").value = ""; document.getElementById("dCustomers").value = "";
-    pendingTags = []; renderDraftTags(); pendingDraftFeedItem = null;
-    closeOverlay("draftOverlay"); hideResumeBar();
-  };
-
-  document.getElementById("saveView").onclick = () => {
-    const name = document.getElementById("vName").value.trim();
-    if (!name) { document.getElementById("vName").focus(); return; }
-    const v = { id: uid("v"), name, layout: document.getElementById("vLayout").value, group: document.getElementById("vGroup").value,
-      sort: document.getElementById("vSort").value, dir: document.getElementById("vDir").value,
-      shippedFilter: document.getElementById("vShipped").value, builtin: false };
-    state.views.push(v); state.activeView = v.id; saveState();
-    closeOverlay("viewOverlay"); document.getElementById("vName").value = ""; document.getElementById("vShipped").value = "all"; render();
-  };
-
-  const feedEl = document.getElementById("feed");
-  function renderFeed(){
-    if (state.feed.length === 0){
-      feedEl.innerHTML = `<div class="feed-empty">Try: “Does the export support scheduling?”, “Meridian Co” (a customer), “currency” (a tag), or “Raise a feature request for a currency conversion calculator. Requested by Acme, Meridian Co.”</div>`;
-      return;
-    }
-    feedEl.innerHTML = state.feed.slice(-6).map(f => `
-      <div class="feed-item">
-        <span class="feed-q">${escapeHtml(f.text)}</span>
-        <div class="feed-a ${f.kind}">${feedBodyHtml(f)}</div>
-      </div>`).join("");
-    feedEl.scrollTop = feedEl.scrollHeight;
-    feedEl.querySelectorAll("[data-raise-from-id]").forEach(btn => {
-      btn.onclick = () => {
-        const entry = state.feed.find(x => x.id === btn.getAttribute("data-raise-from-id"));
-        pendingDraftFeedItem = entry || null;
-        openDraftFromText(btn.getAttribute("data-text"));
-      };
-    });
-    feedEl.querySelectorAll("[data-go-req]").forEach(el => { el.onclick = () => openRequestDetail(el.getAttribute("data-go-req")); });
-  }
-  // "Unanswered" feed entries are the only ones with a lingering action (the
-  // "Raise a feature request from this" button), so they're the only ones
-  // whose body is computed live from current state rather than frozen at
-  // creation time — once actionedRequestId is set (see saveDraft), the button
-  // is replaced by a link to what got created, so it can't be actioned twice.
-  function feedBodyHtml(f){
-    if (f.kind === "unanswered"){
-      if (f.actionedRequestId){
-        const req = state.requests.find(r => r.id === f.actionedRequestId);
-        return req
-          ? `Raised as a feature request: <span class="src" data-go-req="${req.id}">${escapeHtml(req.title)} — open it</span>`
-          : `Raised as a feature request (since deleted).`;
-      }
-      return `Nothing on file answers this yet.<br><button data-raise-from-id="${f.id}" data-text="${escapeHtml(f.text)}">Raise a feature request from this</button>`;
-    }
-    // "matched-request": same live-recomputed, "was this wrong?" pattern as
-    // "unanswered" above — a match can be a false positive (see findAnswer),
-    // so this always offers a way to raise a fresh request instead, right up
-    // until that's actually been done for this entry.
-    if (f.kind === "matched-request"){
-      if (f.actionedRequestId){
-        const req = state.requests.find(r => r.id === f.actionedRequestId);
-        return req
-          ? `Not the right match — raised instead as: <span class="src" data-go-req="${req.id}">${escapeHtml(req.title)} — open it</span>`
-          : `Not the right match — raised as a new feature request (since deleted).`;
-      }
-      const r = state.requests.find(x => x.id === f.matchedRequestId);
-      if (!r) return `The request this was matched to has since been deleted.<br><button data-raise-from-id="${f.id}" data-text="${escapeHtml(f.text)}">Raise a feature request from this</button>`;
-      const statusNote = isShipped(r) ? `Shipped${r.quarter? " in "+r.quarter : ""}.` : `Status: ${statusLabel(r.status)}${r.quarter ? ", targeted "+r.quarter : ""}. Asked ${r.questionCount} time${r.questionCount===1?"":"s"} so far.`;
-      return `${statusNote}<span class="src" data-go-req="${r.id}">Matched to request: ${escapeHtml(r.title)} — open it</span><br><button data-raise-from-id="${f.id}" data-text="${escapeHtml(f.text)}">Not the right match? Raise a new feature request instead</button>`;
-    }
-    return f.html;
-  }
-
-  document.getElementById("composer").addEventListener("submit", e => {
-    e.preventDefault();
-    const input = document.getElementById("composerInput");
-    const text = input.value.trim();
-    if (!text) return;
-    input.value = "";
-    handleEntry(text);
-  });
-
-  function handleEntry(text){
-    const entityMatches = matchEntities(text);
-    if (entityMatches.customers.length || entityMatches.tags.length){
-      const q = { id: uid("q"), text, matchedRequestId: null, answer: null, createdAt: Date.now() };
-      state.questions.push(q);
-      state.feed.push({ text, kind: "answered", html: buildLookupHtml(entityMatches) });
-      saveState(); renderFeed(); render();
-      return;
-    }
-    if (isRequestIntent(text)){
-      const q = { id: uid("q"), text, matchedRequestId: null, answer: null, createdAt: Date.now() };
-      state.questions.push(q);
-      state.feed.push({ text, kind: "created", html: `Opening a draft request from this — review it below.` });
-      saveState(); renderFeed();
-      pendingDraftFeedItem = null;
-      openDraftFromText(text);
-      return;
-    }
-    const match = findAnswer(text);
-    const q = { id: uid("q"), text, matchedRequestId: match && match.type==="request" ? match.item.id : (match ? match.item.matchedRequestId : null), answer: null, createdAt: Date.now() };
-    state.questions.push(q);
-    if (match && match.type === "request"){
-      const r = match.item;
-      r.questionCount += 1;
-      // Rendered dynamically (see feedBodyHtml) rather than frozen as html at
-      // creation time — same reasoning as "unanswered" entries below: a match
-      // can be wrong, so this needs a live "not the right match?" escape
-      // hatch, and it should keep reflecting the request's current status
-      // rather than whatever it was the moment this question came in.
-      state.feed.push({ id: uid("f"), text, kind: "matched-request", questionId: q.id, matchedRequestId: r.id, actionedRequestId: null });
-    } else if (match && match.type === "question"){
-      const linkAttr = match.item.matchedRequestId ? ` data-go-req="${match.item.matchedRequestId}"` : "";
-      state.feed.push({ text, kind: "answered", html: `${escapeHtml(match.item.answer)}<span class="src"${linkAttr}>Matched to a previously answered question${match.item.matchedRequestId ? " — open the request" : ""}</span>` });
-    } else {
-      state.feed.push({ id: uid("f"), text, kind: "unanswered", actionedRequestId: null });
-    }
-    saveState(); renderFeed(); render();
-  }
-
+  // =====================================================================
+  //  Draft (new feature request) overlay — unchanged mechanics
+  // =====================================================================
   let pendingTags = [];
-  // Set only when a draft is opened from an "unanswered" or "matched-request"
-  // feed entry's button (see renderFeed/feedBodyHtml); cleared before every
-  // other path into the draft overlay so only that specific prompt gets
-  // marked actioned on save.
+  // Set when a draft is opened from the Answer screen's "Raise a new request
+  // instead" link (State A) — moves the original question from the wrong
+  // match onto the new request, same as before.
   let pendingDraftFeedItem = null;
+  // Set when a draft is opened from a theme/cluster ("Raise request") or from
+  // "Raise it anyway" (State C, a single question) — every question id here
+  // gets linked to the newly created request on save.
+  let pendingDraftClusterQuestionIds = null;
+
   function openDraftFromText(text){
     const cleaned = text.replace(/^raise (a )?(new )?feature request( for)?[:]?/i, "").trim();
     const firstSentenceEnd = cleaned.search(/[.!?]/);
@@ -1337,17 +1742,11 @@
     document.getElementById("dCustomers").value = extractCustomers(cleaned).join(", ");
     pendingTags = suggestTags(cleaned);
     renderDraftTags();
-    hideResumeBar();
     openOverlay("draftOverlay");
   }
   function renderDraftTags(){
     const el = document.getElementById("dTags");
     if (pendingTags.length === 0){ el.innerHTML = `<span class="badge">No suggestions — add tags after saving.</span>`; return; }
-    // Accepted and still-suggested tags apply identically at save time (only a
-    // rejected one is dropped — see saveDraft), but they need to look different,
-    // or accepting reads as doing nothing. An accepted tag becomes a solid chip
-    // (its real urgency-* color, or a plain topic chip) with just an undo "×";
-    // a still-open suggestion keeps its dashed outline and the tick/cross pair.
     el.innerHTML = pendingTags.map((t,i) => {
       if (t.state === "accepted"){
         const cls = t.type === "urgency" ? `urgency-${t.value}` : "topic";
@@ -1368,249 +1767,176 @@
       };
     });
   }
+  document.getElementById("discardDraft").onclick = () => {
+    document.getElementById("dTitle").value = ""; document.getElementById("dDesc").value = ""; document.getElementById("dCustomers").value = "";
+    pendingTags = []; renderDraftTags(); pendingDraftFeedItem = null; pendingDraftClusterQuestionIds = null;
+    closeOverlay("draftOverlay");
+  };
   document.getElementById("saveDraft").onclick = () => {
     const title = document.getElementById("dTitle").value.trim() || "Untitled request";
     const description = document.getElementById("dDesc").value.trim();
     const customers = document.getElementById("dCustomers").value.split(",").map(s=>s.trim()).filter(Boolean);
-    // Urgency is picked out of the reviewed suggestions rather than stored as a tag:
-    // if it's still present (accepted or left as "suggested" — i.e. not rejected)
-    // its value is applied; if the suggestion was rejected outright, fall back to
-    // "medium". Either way it becomes r.urgency, a normal editable field from here on.
-    // Urgency and topic are each picked out of the reviewed suggestions:
-    // if a suggestion is still present (accepted, or simply left as "suggested" —
-    // i.e. not rejected) its value is applied; a rejected suggestion leaves that
-    // field unset (or defaulted, for urgency, since it's a required field). Each
-    // becomes a normal, independently editable field from here on.
     const urgencyTag = pendingTags.find(t => t.type === "urgency");
     const urgency = urgencyTag ? urgencyTag.value : "medium";
     const topicTag = pendingTags.find(t => t.type === "topic");
     const topic = topicTag ? topicTag.value : null;
     const now = Date.now();
-    const req = { id: uid("req"), title, description, customers, urgency, topic, status: "new", quarter: "Unscheduled", dueDate: null, createdAt: now, updatedAt: now, questionCount: 0 };
+    const req = { id: uid("req"), title, description, customers, urgency, topic, status: "new", quarter: "Unscheduled", dueDate: null, createdAt: now, updatedAt: now, questionCount: 0, shippedAt: null };
     state.requests.push(req);
-    // If this draft was opened from a "not the right match?" button (see
-    // feedBodyHtml's "matched-request" case), the original question is still
-    // pointed at the wrong request, and that wrong request's count still
-    // includes it — move both across so the numbers end up exactly where
-    // they'd have landed had the match been right from the start.
     if (pendingDraftFeedItem && pendingDraftFeedItem.matchedRequestId){
-      const wrongReq = state.requests.find(r => r.id === pendingDraftFeedItem.matchedRequestId);
-      if (wrongReq) wrongReq.questionCount = Math.max(0, wrongReq.questionCount - 1);
       const origQ = state.questions.find(x => x.id === pendingDraftFeedItem.questionId);
       if (origQ) origQ.matchedRequestId = req.id;
       req.questionCount += 1;
+      pendingDraftFeedItem = null;
     }
-    // If this draft was opened from an "unanswered" feed prompt, mark that
-    // prompt actioned so its button turns into a link instead of staying
-    // clickable — this is what stops the same prompt from spawning duplicates.
-    if (pendingDraftFeedItem){ pendingDraftFeedItem.actionedRequestId = req.id; pendingDraftFeedItem = null; }
+    if (pendingDraftClusterQuestionIds){
+      pendingDraftClusterQuestionIds.forEach(qid => {
+        const qq = state.questions.find(x => x.id === qid);
+        if (qq && !qq.matchedRequestId){ qq.matchedRequestId = req.id; req.questionCount += 1; }
+      });
+      pendingDraftClusterQuestionIds = null;
+    }
     saveState();
     document.getElementById("dTitle").value = ""; document.getElementById("dDesc").value = ""; document.getElementById("dCustomers").value = "";
     pendingTags = []; renderDraftTags();
-    closeOverlay("draftOverlay"); hideResumeBar(); render(); renderFeed();
+    closeOverlay("draftOverlay");
+    state.activeScreen = "now"; state.currentAnswer = null;
+    render();
   };
 
-  function openRequestDetail(id){
-    closeOverlay("detailOverlay");
-    const r = state.requests.find(x => x.id === id);
-    if (!r) return;
-    const linkedQ = state.questions.filter(q => q.matchedRequestId === id);
-    const modal = document.getElementById("detailModal");
-    modal.innerHTML = `
-      <button class="close-x" data-close="detailOverlay">&#10005;</button>
-      <input type="text" id="editTitle" value="${escapeHtml(r.title)}" style="font-family:var(--font-display);font-size:20px;font-weight:600;border:none;background:transparent;padding:0;width:calc(100% - 30px);color:var(--ink);" />
-      <textarea id="editDescription" style="font-family:var(--font-body);font-size:12.5px;color:var(--ink-soft);border:none;background:transparent;padding:0;width:100%;resize:vertical;min-height:36px;margin:4px 0 0;">${escapeHtml(r.description)}</textarea>
-      <div class="badge" style="display:block;margin:8px 0 16px;">Created ${ageLabel(r.createdAt)} &middot; Updated ${ageLabel(r.updatedAt)}</div>
-      <div class="field-row">
-        <div class="field"><label>Status ${customStatuses().length ? `<span class="src" id="manageStatusesLink" style="font-weight:400;font-size:11px;">(manage)</span>` : ""}</label>
-          <select id="editStatus">${addableOptionsHtml(knownValuesFor("status", STATUS_ORDER), r.status, false, statusLabel)}</select>
-          <input type="text" id="newStatusInput" placeholder="e.g. Blocked" style="display:none;margin-top:6px;" />
-        </div>
-        <div class="field"><label>Urgency</label>
-          <select id="editUrgency">
-            <option value="high" ${r.urgency==='high'?'selected':''}>High</option>
-            <option value="medium" ${r.urgency==='medium'?'selected':''}>Medium</option>
-            <option value="low" ${r.urgency==='low'?'selected':''}>Low</option>
-          </select>
-        </div>
-        <div class="field"><label>Quarter</label>
-          <select id="editQuarter">${(function(){
-            const quarters = knownQuarters();
-            if (!quarters.includes(r.quarter)) quarters.push(r.quarter);
-            return addableOptionsHtml(quarters, r.quarter, false, q => q);
-          })()}</select>
-          <input type="text" id="newQuarterInput" placeholder="e.g. Q1 2028" style="display:none;margin-top:6px;" />
-        </div>
-      </div>
-      <div class="field-row">
-        <div class="field"><label>Due date${r.dueDate ? ` — ${dueLabel(r.dueDate)}` : ""}</label>
-          <input type="date" id="editDueDate" value="${r.dueDate ? new Date(r.dueDate).toISOString().slice(0,10) : ""}" />
-        </div>
-        <div class="field"><label>Priority score</label>
-          <div class="badge" style="padding-top:9px;">${scoreOf(r).toFixed(1)}</div>
-        </div>
-      </div>
-      <div class="field"><label>Customers (${r.customers.length})</label>
-        <div id="customerChips">${r.customers.map((c,i) => `<span class="chip segment">${escapeHtml(c)} <span class="reject" data-remove-cust="${i}" title="Remove">&#10005;</span></span>`).join(" ") || '<span class="badge">none logged</span>'}</div>
-        <input type="text" id="addCustomerInput" placeholder="Add a customer, press Enter" style="margin-top:8px;" />
-      </div>
-      <div class="field"><label>Topic ${customTopics().length ? `<span class="src" id="manageTopicsLink" style="font-weight:400;font-size:11px;">(manage)</span>` : ""}</label>
-        <select id="editTopic">${addableOptionsHtml(knownValuesFor("topic"), r.topic, true)}</select>
-        <input type="text" id="newTopicInput" placeholder="e.g. billing" style="display:none;margin-top:6px;" />
-      </div>
-      <div class="detail-section"><h3>Questions linked to this request (${linkedQ.length})</h3>
-        ${linkedQ.length ? linkedQ.map(q => `<div class="qlink">${escapeHtml(q.text)} <span class="badge">· ${ageLabel(q.createdAt)}</span></div>`).join("") : '<div class="badge">No questions logged against this yet.</div>'}
-      </div>
-      <div class="modal-actions">
-        <button class="btn btn-danger" id="deleteRequestBtn" style="margin-right:auto;">Delete request</button>
-        ${!isShipped(r) ? `<button class="btn-secondary" id="markShipped">Mark as shipped</button>` : `<span class="badge" style="align-self:center;">Answered by this feature</span>`}
-        <button class="btn-primary" id="closeDetailBtn">Done</button>
-      </div>`;
-    modal.querySelectorAll("[data-close]").forEach(el => el.onclick = () => closeOverlayHandled("detailOverlay"));
-    const manageLink = modal.querySelector("#manageStatusesLink");
-    if (manageLink) manageLink.onclick = () => openManageStatuses();
-    const manageTopicsLink = modal.querySelector("#manageTopicsLink");
-    if (manageTopicsLink) manageTopicsLink.onclick = () => openManageTopics();
+  document.querySelectorAll(".overlay").forEach(ov => {
+    let downOnBackdrop = false;
+    ov.addEventListener("mousedown", e => { downOnBackdrop = (e.target === ov); });
+    ov.addEventListener("click", e => { if (e.target === ov && downOnBackdrop){ closeOverlay(ov.id); if (ov.id === "detailOverlay"){ document.getElementById("detailModal").classList.remove("req-modal"); render(); } } downOnBackdrop = false; });
+  });
+  document.querySelectorAll("[data-close]").forEach(el => { el.onclick = () => closeOverlay(el.getAttribute("data-close")); });
+  function openOverlay(id){ document.getElementById(id).classList.add("open"); }
+  function closeOverlay(id){ document.getElementById(id).classList.remove("open"); }
 
-    // Title and description autosave on blur, same as every other field here —
-    // no separate "save" step, and an empty title falls back to "Untitled request"
-    // rather than silently keeping the old one out of sync with the table.
-    const titleEl = document.getElementById("editTitle");
-    const descEl = document.getElementById("editDescription");
-    titleEl.addEventListener("blur", () => {
-      const val = titleEl.value.trim() || "Untitled request";
-      if (val !== r.title){ r.title = val; r.updatedAt = Date.now(); saveState(); render(); }
-    });
-    descEl.addEventListener("blur", () => {
-      const val = descEl.value.trim();
-      if (val !== r.description){ r.description = val; r.updatedAt = Date.now(); saveState(); render(); }
-    });
+  // =====================================================================
+  //  Screen-level event wiring (delegated per render() call)
+  // =====================================================================
+  let viewsMenuOpen = false;
+  function wireScreenInteractions(){
+    mainEl.querySelectorAll("[data-open-req]").forEach(el => { el.onclick = () => openRequestDetail(el.getAttribute("data-open-req")); });
+    mainEl.querySelectorAll("[data-go-req]").forEach(el => { el.onclick = () => openRequestDetail(el.getAttribute("data-go-req")); });
+    mainEl.querySelectorAll("[data-nav-go]").forEach(el => { el.onclick = () => { state.activeScreen = el.getAttribute("data-nav-go"); state.currentAnswer = null; render(); }; });
+    mainEl.querySelectorAll("[data-mark-shipped]").forEach(el => { el.onclick = () => {
+      const r = state.requests.find(x => x.id === el.getAttribute("data-mark-shipped"));
+      if (r){ r.status = "shipped"; r.shippedAt = Date.now(); r.updatedAt = Date.now(); saveState(); render(); }
+    }; });
+    mainEl.querySelectorAll("[data-go-cust]").forEach(el => { el.onclick = () => submitAsk(el.getAttribute("data-go-cust")); });
+    mainEl.querySelectorAll("[data-quick-ask]").forEach(el => { el.onclick = () => submitAsk(el.getAttribute("data-quick-ask")); });
 
-    // Status, quarter and topic all autosave on change, directly
-    // against the shared `r` object, instead of waiting for a "Save" click. That's
-    // what fixes the earlier bug: because every field commits the moment it
-    // changes, there's no in-progress, unsaved edit left sitting in the DOM that
-    // another field's action could wipe out by rebuilding the modal — the modal is
-    // always rebuilt from state that's already current. Each field uses the same
-    // dropdown-plus-"Add new" pattern via wireAddableSelect().
-    function fieldCommitter(field, allowEmpty){
-      return (val, isNew) => {
-        r[field] = (allowEmpty && val === "") ? null : val;
-        r.updatedAt = Date.now(); saveState();
-        if (isNew) openRequestDetail(id); // rebuild so the new value now appears in its own dropdown
-        render();
-      };
-    }
-    wireAddableSelect(document.getElementById("editStatus"), document.getElementById("newStatusInput"), fieldCommitter("status", false));
-    wireAddableSelect(document.getElementById("editQuarter"), document.getElementById("newQuarterInput"), fieldCommitter("quarter", false));
-    wireAddableSelect(document.getElementById("editTopic"), document.getElementById("newTopicInput"), fieldCommitter("topic", true));
-    // Urgency stays a plain fixed-choice select — no "Add new" here by design.
-    document.getElementById("editUrgency").onchange = () => { r.urgency = document.getElementById("editUrgency").value; r.updatedAt = Date.now(); saveState(); render(); };
-    document.getElementById("editDueDate").onchange = (e) => {
-      r.dueDate = e.target.value ? new Date(e.target.value + "T00:00:00").getTime() : null;
-      r.updatedAt = Date.now(); saveState(); openRequestDetail(id); render();
-    };
-
-    // Customers: chips with an inline remove (×), plus a plain add-on-Enter input —
-    // same "commit immediately, rebuild from state" pattern as every other field
-    // here, so there's never an unsaved customer sitting in the DOM.
-    modal.querySelectorAll("[data-remove-cust]").forEach(el => {
+    // Now / Trends: raise a request from an unmatched-question cluster.
+    mainEl.querySelectorAll("[data-raise-cluster-idx]").forEach(el => {
       el.onclick = () => {
-        r.customers.splice(+el.getAttribute("data-remove-cust"), 1);
-        r.updatedAt = Date.now(); saveState(); openRequestDetail(id); render();
+        const idx = +el.getAttribute("data-raise-cluster-idx");
+        const clusters = clusterUnmatchedQuestions();
+        const c = clusters[idx];
+        if (!c) return;
+        pendingDraftFeedItem = null;
+        pendingDraftClusterQuestionIds = c.items.map(q => q.id);
+        openDraftFromText("Raise a feature request for: " + clusterLabel(c));
       };
     });
-    const addCustInput = document.getElementById("addCustomerInput");
-    function commitAddCustomer(){
-      const val = addCustInput.value.trim();
-      if (!val) return;
-      if (r.customers.some(c => c.toLowerCase() === val.toLowerCase())) { addCustInput.value = ""; return; }
-      r.customers.push(val); r.updatedAt = Date.now(); saveState();
-      openRequestDetail(id); render();
-    }
-    addCustInput.addEventListener("keydown", e => { if (e.key === "Enter"){ e.preventDefault(); commitAddCustomer(); } });
-    addCustInput.addEventListener("blur", commitAddCustomer);
 
-    const shipBtn = modal.querySelector("#markShipped");
-    if (shipBtn) shipBtn.onclick = () => { r.status = "shipped"; r.updatedAt = Date.now(); saveState(); openRequestDetail(id); render(); };
-    modal.querySelector("#closeDetailBtn").onclick = () => { closeOverlay("detailOverlay"); render(); };
-    modal.querySelector("#deleteRequestBtn").onclick = () => {
-      if (!confirm(`Permanently delete "${r.title}"? This can't be undone. Its ${linkedQ.length} linked question${linkedQ.length===1?"":"s"} will stay logged but unlinked.`)) return;
-      state.requests = state.requests.filter(x => x.id !== id);
-      // Questions that pointed at this request become unmatched rather than
-      // being deleted themselves — the question was still genuinely asked;
-      // only the request it was tracked against is gone.
-      state.questions.forEach(q => { if (q.matchedRequestId === id) q.matchedRequestId = null; });
-      // Any feed prompt that got actioned into *this* request should go back
-      // to being actionable — the feature it pointed to no longer exists.
-      state.feed.forEach(f => { if (f.actionedRequestId === id) f.actionedRequestId = null; });
-      saveState(); closeOverlay("detailOverlay"); render(); renderFeed();
+    // Answer screen actions
+    const countBtn = mainEl.querySelector("[data-count-ask]");
+    if (countBtn) countBtn.onclick = () => {
+      const a = state.currentAnswer;
+      const r = state.requests.find(x => x.id === a.requestId);
+      const q = state.questions.find(x => x.id === a.questionId);
+      if (r && q && !q.matchedRequestId){
+        q.matchedRequestId = r.id; r.questionCount += 1;
+        if (a.customer && !a.alreadyCustomer && !r.customers.some(c => c.toLowerCase() === a.customer.toLowerCase())) r.customers.push(a.customer);
+        r.updatedAt = Date.now();
+        a.counted = true;
+        saveState(); render();
+      }
     };
-    openOverlay("detailOverlay");
-  }
+    const raiseInstead = mainEl.querySelector("[data-raise-instead]");
+    if (raiseInstead) raiseInstead.onclick = () => {
+      const a = state.currentAnswer;
+      pendingDraftClusterQuestionIds = null;
+      pendingDraftFeedItem = { matchedRequestId: a.requestId, questionId: a.questionId };
+      openDraftFromText(a.text);
+    };
+    const raiseTheme = mainEl.querySelector("[data-raise-theme]");
+    if (raiseTheme) raiseTheme.onclick = () => {
+      const a = state.currentAnswer;
+      pendingDraftFeedItem = null;
+      pendingDraftClusterQuestionIds = a.clusterQuestionIds;
+      openDraftFromText("Raise a feature request for: " + a.label);
+    };
+    const raiseFirst = mainEl.querySelector("[data-raise-first]");
+    if (raiseFirst) raiseFirst.onclick = () => {
+      const a = state.currentAnswer;
+      pendingDraftFeedItem = null;
+      pendingDraftClusterQuestionIds = [a.questionId];
+      openDraftFromText(a.text);
+    };
+    const rephrase = mainEl.querySelector("[data-rephrase]");
+    if (rephrase) rephrase.onclick = () => {
+      state.activeScreen = "now"; state.currentAnswer = null; render();
+      const input = document.getElementById("askInput");
+      input.value = state.currentAnswer ? "" : "";
+      input.focus();
+    };
 
-  function renderHeaderMeta(){
-    document.getElementById("headerMeta").textContent = state.requests.length + " requests · " + state.questions.length + " questions logged";
+    // Requests screen controls
+    mainEl.querySelectorAll('[data-seg="group"] button').forEach(b => { b.onclick = () => { state.requestsControls.group = b.getAttribute("data-val"); saveState(); render(); }; });
+    mainEl.querySelectorAll('[data-seg="layout"] button').forEach(b => { b.onclick = () => { state.requestsControls.layout = b.getAttribute("data-val"); saveState(); render(); }; });
+    const shipSel = mainEl.querySelector("#shippedFilterSelect");
+    if (shipSel) shipSel.onchange = () => { state.requestsControls.shippedFilter = shipSel.value; saveState(); render(); };
+    const newReqBtn = mainEl.querySelector("#newRequestBtn");
+    if (newReqBtn) newReqBtn.onclick = () => { pendingDraftFeedItem = null; pendingDraftClusterQuestionIds = null; openDraftFromText(""); };
+    const viewsBtn = mainEl.querySelector("#viewsMenuBtn");
+    const viewsList = mainEl.querySelector("#viewsMenuList");
+    if (viewsBtn) viewsBtn.onclick = (e) => { e.stopPropagation(); viewsList.classList.toggle("open"); };
+    document.addEventListener("click", () => { if (viewsList) viewsList.classList.remove("open"); }, { once: true });
+    mainEl.querySelectorAll("[data-load-view]").forEach(b => {
+      b.onclick = (e) => {
+        if (e.target.closest("[data-del-view]")) return;
+        const v = state.views.find(x => x.id === b.getAttribute("data-load-view"));
+        if (v){ state.requestsControls = { group: v.group, layout: v.layout, shippedFilter: v.shippedFilter }; saveState(); render(); }
+      };
+    });
+    mainEl.querySelectorAll("[data-del-view]").forEach(b => {
+      b.onclick = (e) => { e.stopPropagation(); state.views = state.views.filter(v => v.id !== b.getAttribute("data-del-view")); saveState(); render(); };
+    });
+    const saveViewOpen = mainEl.querySelector("[data-save-view-open]");
+    if (saveViewOpen) saveViewOpen.onclick = () => openOverlay("viewOverlay");
+    const saveViewBtn2 = mainEl.querySelector("[data-save-view]");
+    if (saveViewBtn2) saveViewBtn2.onclick = () => openOverlay("viewOverlay");
   }
+  document.getElementById("saveView").onclick = () => {
+    const name = document.getElementById("vName").value.trim();
+    if (!name) { document.getElementById("vName").focus(); return; }
+    const v = { id: uid("v"), name, group: state.requestsControls.group, layout: state.requestsControls.layout, shippedFilter: state.requestsControls.shippedFilter, builtin: false };
+    state.views.push(v); saveState();
+    closeOverlay("viewOverlay"); document.getElementById("vName").value = "";
+    render();
+  };
+
+  // ---------------- Ask box wiring ----------------
+  const askBox = document.getElementById("askBox");
+  const askInput = document.getElementById("askInput");
+  function syncAskBoxStyle(){ askBox.classList.toggle("has-content", askInput.value.trim().length > 0); }
+  askInput.addEventListener("input", syncAskBoxStyle);
+  askInput.addEventListener("focus", () => askBox.classList.add("focused"));
+  askInput.addEventListener("blur", () => askBox.classList.remove("focused"));
+  askInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter"){ e.preventDefault(); submitAsk(askInput.value); syncAskBoxStyle(); }
+  });
 
   applyTheme();
   const themeSelect = document.getElementById("themeSelect");
   themeSelect.value = state.theme;
   themeSelect.onchange = () => { state.theme = themeSelect.value; saveState(); applyTheme(); };
 
-  // Draggable divider between the Views area (main) and the conversation panel
-  // (composer-wrap). The feed's max-height is a CSS custom property so drag
-  // just tweaks a number; the chosen height is persisted (feedHeightPx) so it
-  // survives reloads, same as any other layout setting.
-  (function wireFeedResize(){
-    const handle = document.getElementById("feedResizeHandle");
-    const MIN_PX = 60;
-    function maxPx(){ return Math.round(window.innerHeight * 0.7); }
-    function apply(px){
-      const clamped = Math.max(MIN_PX, Math.min(maxPx(), px));
-      document.documentElement.style.setProperty("--feed-height", clamped + "px");
-      return clamped;
-    }
-    const initial = state.feedHeightPx || Math.round(window.innerHeight * 0.3);
-    apply(initial);
-
-    let dragging = false, startY = 0, startPx = 0;
-    handle.addEventListener("mousedown", (e) => {
-      dragging = true;
-      startY = e.clientY;
-      const cur = parseInt(getComputedStyle(document.documentElement).getPropertyValue("--feed-height"), 10);
-      startPx = Number.isFinite(cur) ? cur : initial;
-      handle.classList.add("dragging");
-      document.body.style.userSelect = "none";
-      e.preventDefault();
-    });
-    window.addEventListener("mousemove", (e) => {
-      if (!dragging) return;
-      // Handle sits above the feed panel: dragging up (deltaY negative going
-      // down means startY - clientY is positive when moving up) grows it.
-      apply(startPx + (startY - e.clientY));
-    });
-    window.addEventListener("mouseup", () => {
-      if (!dragging) return;
-      dragging = false;
-      handle.classList.remove("dragging");
-      document.body.style.userSelect = "";
-      const finalPx = parseInt(getComputedStyle(document.documentElement).getPropertyValue("--feed-height"), 10);
-      state.feedHeightPx = Number.isFinite(finalPx) ? finalPx : state.feedHeightPx;
-      saveState();
-    });
-    // Keep the panel within bounds if the window is resized smaller.
-    window.addEventListener("resize", () => {
-      const cur = parseInt(getComputedStyle(document.documentElement).getPropertyValue("--feed-height"), 10);
-      if (Number.isFinite(cur)) apply(cur);
-    });
-  })();
-
-  renderFeed(); renderHeaderMeta(); render();
-  const origSave = saveState;
-  saveState = function(){ origSave(); renderHeaderMeta(); };
+  render();
 })();
 </script>
 </body>
 </html>
-

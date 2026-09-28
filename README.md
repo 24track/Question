@@ -6,37 +6,57 @@ duplicate asks before they become duplicate work, see which topics keep
 coming up, and know what to work on next.
 
 <p>
-  <img src="docs/screenshots/today-dark.png" alt="Today view, dark theme" width="49%">
-  <img src="docs/screenshots/today-light.png" alt="Today view, light theme" width="49%">
+  <img src="docs/screenshots/now-dark.png" alt="Now screen, dark theme" width="49%">
+  <img src="docs/screenshots/now-light.png" alt="Now screen, light theme" width="49%">
 </p>
 
-The **Today** view above: every open request ranked by a single adjustable
-priority score, blending urgency, how many customers asked, how many
-questions came in, age, and due-date proximity.
+The **Now** screen above answers one question directly — "what should I work
+on next, and why?" — as a single recommendation with the reasoning spelled
+out in plain language, rather than a sortable table you have to interpret
+yourself.
 
 ## What it does
 
-- **Today view** — a single, adjustable priority score (urgency, customer
-  count, question volume, age, due-date proximity) surfaces what to work on
-  next, instead of a flat backlog. Shipped requests don't clutter it — they
-  land in their own **Shipped** view instead (any view can be set to hide
-  shipped requests, show them alongside everything else, or show only them).
+- **Now** — the single most important request to work on, with the reasons
+  (customers waiting, questions asked, due date, current status) written out
+  as a sentence, plus what's next in line and any recurring "asked for, but
+  not tracked" theme. Backed by the same adjustable priority score as
+  before (urgency, customer count, question volume, age, due-date
+  proximity) — open a request to see the full breakdown and adjust the
+  weights.
+- **Ask box** (in the header, on every screen) — type a question, a
+  customer or topic name, or a quarter, and get an answer screen back: a
+  match against an existing request (with a one-click way to count your ask
+  and bump its rank), a recurring theme if others have asked something
+  similar, confirmation that a brand-new question was logged, or a
+  quarter/customer/topic breakdown as grouped cards. Every question is
+  logged either way — nothing is thrown away, and nothing sits in a visible
+  backlog until it's actually a repeated theme.
+- **Requests** — every feature request in one list, with Group by
+  (quarter/urgency/topic/none) and Layout (list, or a "ledger" view that
+  draws the priority score as a stacked bar of its parts) controls instead
+  of a fixed set of tabs. A shipped filter (hidden/included/only) and
+  saveable named presets ("Views") replace the old per-tab settings.
 - **Feature requests** — track status, urgency, topic, quarter, customers,
   and due date per request; raise a request straight from a logged question
-  so duplicates get merged instead of re-created.
+  (or a whole recurring theme at once) so duplicates get merged instead of
+  re-created.
 - **Questions** — log customer questions, match them to an existing request
   or leave them unmatched, and see which topics have unanswered questions
   piling up.
-- **Trends** — cross-cutting views across requests and questions: topic
-  heat, recurring themes without a tracked feature yet, customers by
-  request count, and quarter-over-quarter shape.
+- **Trends** — cross-cutting views across requests and questions, led with
+  recurring themes without a tracked feature yet: which tracked features
+  get asked about most (flagging one that shipped but is still generating
+  questions — a discoverability problem, not a missing-feature one),
+  requests shared by more than one customer, and customers asking for more
+  than one thing.
 - **Custom statuses & topics** — rename or delete the values you added,
   the same way for both.
 - **Light / dark / system theme.**
 
 ## How question matching works
 
-Typing a question into the composer tries, in order: an exact customer/topic
+Typing into the ask box tries, in order: an exact customer/topic/quarter
 lookup, then a match against logged requests and previously-answered
 questions, then (if it looks like "raise a feature request for...") a new
 draft. The request/question match is plain keyword overlap — it stems your
