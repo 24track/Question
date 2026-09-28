@@ -11,6 +11,18 @@ Known gaps and things we want to revisit — not urgent, not forgotten.
   `QUESTION_DATA_DIR` env var override (unset = today's unchanged behavior,
   fixed `Documents/Question Data`) so this isn't blocked on a bigger
   refactor later — but nothing in the app exposes or sets it yet.
+  - **Current workaround: swap folders by name.** Users can maintain
+    separate Request databases by prepending topic names to the start of the
+    `Question Data` folder. The app only recognises folders with that exact
+    name; if the folder is renamed (e.g. `Personal Question Data`), the app
+    won't open it.
+
+    This means you can have multiple `Question Data` folders on your machine
+    and swap between them by removing the prepended topic when you want to
+    open a specific database.
+
+    If there is no `Question Data` folder, the app will create a new, blank,
+    `Question Data` folder on open.
 
 - **Editable labels for other use cases (display-only)** — let a user rename
   the priority-score weight labels, "Shipped" (e.g. "Done") and "Requests"
