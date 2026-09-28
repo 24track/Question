@@ -1496,7 +1496,7 @@
           <div class="prop-row">
             <div class="p-label">Quarter</div>
             <div class="p-value">${escapeHtml(r.quarter || "None")} ▾</div>
-            <select class="prop-select" id="editQuarter">${(function(){ const qs = knownQuarters(); if (!qs.includes(r.quarter)) qs.push(r.quarter); return addableOptionsHtml(qs, r.quarter, false, q=>q); })()}</select>
+            <select class="prop-select" id="editQuarter">${(function(){ const qs = knownQuarters(); if (!qs.includes("Unscheduled")) qs.unshift("Unscheduled"); if (!qs.includes(r.quarter)) qs.push(r.quarter); return addableOptionsHtml(qs, r.quarter, false, q=>q); })()}</select>
           </div>
           <input type="text" id="newQuarterInput" class="add-new-inline" placeholder="e.g. Q1 2028" />
           <div class="prop-row">
