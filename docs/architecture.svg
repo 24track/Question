@@ -45,7 +45,7 @@
   <text x="75" y="163" class="tag">contextIsolation: true · nodeIntegration: false · sandbox: true</text>
   <text x="75" y="192" class="h-mono">renderer/index.html</text>
   <text x="75" y="213" class="b">Single-file HTML/CSS/JS UI, no framework, no build step. Holds all state in memory</text>
-  <text x="75" y="231" class="b">(requests, questions, views, feed) and re-renders on every change.</text>
+  <text x="75" y="231" class="b">(requests, questions, views/requestsControls, current answer, recent-asks feed) and re-renders on every change.</text>
   <text x="770" y="213" class="b">Has no filesystem or Node access of</text>
   <text x="770" y="231" class="b">its own — only <tspan class="b-mono">window.questionAPI</tspan>.</text>
 
@@ -81,7 +81,7 @@
   <text x="75" y="740" class="h">backend.cjs — plain Node, no Electron APIs</text>
   <text x="75" y="767" class="b">&#8226; Reads/writes each request and question as a Markdown file with YAML frontmatter</text>
   <text x="75" y="787" class="b">&#8226; Rebuilds the SQLite index from those files on every save (never hand-edited, never assumed to exist)</text>
-  <text x="75" y="807" class="b">&#8226; Reads/writes <tspan class="b-mono">settings.json</tspan> (views, score weights, theme, feed panel height)</text>
+  <text x="75" y="807" class="b">&#8226; Reads/writes <tspan class="b-mono">settings.json</tspan> (views, requestsControls, score weights, theme)</text>
   <text x="75" y="827" class="b">&#8226; Checks / writes the seeded-marker file (<tspan class="b-mono">hasEverLaunched</tspan> / <tspan class="b-mono">markLaunched</tspan>)</text>
   <text x="75" y="855" class="tag">Zero dependencies — a hand-rolled frontmatter reader/writer and Node's built-in node:sqlite.</text>
 
