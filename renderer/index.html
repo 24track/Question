@@ -206,6 +206,9 @@
   .segmented button.active { background: var(--paper-raised); color: var(--ink); }
   .req-toolbar-spacer { flex: 1; }
   select.plain-select { font-family: var(--font-body); font-size: 13px; color: var(--ink-soft); border: 1px solid var(--rule-strong); border-radius: 6px; padding: 6px 10px; background: var(--paper); }
+  .filter-bar { padding: 0 40px 14px; }
+  .filter-chip { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; padding: 4px 6px 4px 10px; border-radius: 5px; background: var(--teal-soft); border: 1px solid var(--teal-strip-border); color: var(--teal); }
+  .filter-chip button { background: none; border: none; color: inherit; cursor: pointer; font-size: 12px; padding: 0 3px; }
   .new-request-link { font-family: var(--font-body); font-size: 13px; color: var(--teal); font-weight: 600; background: none; border: none; cursor: pointer; }
   .views-menu { position: relative; }
   .views-menu-btn { font-family: var(--font-body); font-size: 13px; color: var(--ink-soft); background: none; border: none; cursor: pointer; }
@@ -498,7 +501,17 @@
   // old tab strip of saved "views" — see docs handover README, "Requests
   // (2b)". state.views is kept around only as named presets of these three
   // controls (a small "Views ▾" menu), migrated from the old tab set below.
-  function defaultRequestsControls(){ return { group: "quarter", layout: "list", shippedFilter: "hide" }; }
+  // `filter` (optional) narrows the list to one customer, topic or quarter:
+  // { type: "customer" | "topic" | "quarter", value }. It comes from "Save as view"
+  // on a customer/topic/quarter answer, and is kept by saved views.
+  function defaultRequestsControls(){ return { group: "quarter", layout: "list", shippedFilter: "hide", filter: null }; }
+  function requestMatchesFilter(r, f){
+    if (!f) return true;
+    if (f.type === "customer") return requestsForCustomer(f.value).includes(r);
+    if (f.type === "quarter") return (r.quarter || "Unscheduled") === f.value;
+    return (r[f.type] || "").toLowerCase() === (f.value || "").toLowerCase();
+  }
+  function filterLabel(f){ return (f.type === "customer" ? "Customer" : f.type === "topic" ? "Topic" : "Quarter") + ": " + f.value; }
   function defaultViews(){
     // Migration table from the handover README: All requests -> None/List/all,
     // By urgency -> Urgency, Topic heat -> Topic, By quarter -> Quarter,
@@ -616,9 +629,11 @@
       group: v.group === "status" ? "none" : (v.group || "none"),
       layout: "list",
       shippedFilter: v.shippedFilter || "all",
+      filter: v.filter || null,
       builtin: !!v.builtin,
     }));
     if (!s.requestsControls) s.requestsControls = defaultRequestsControls();
+    if (s.requestsControls.filter === undefined) s.requestsControls.filter = null;
     if (!s.activeScreen) s.activeScreen = "now";
     if (s.currentAnswer === undefined) s.currentAnswer = null;
     if (!s.feed) s.feed = [];
@@ -1515,6 +1530,7 @@
     });
     return {
       kind: "list", listType: "quarter", text,
+      filter: qMatch && qMatch.focus ? { type: "quarter", value: qMatch.focus } : null,
       title: "Here's what's planned, by quarter.",
       meta: `matched "quarter" · all ${openReqs.length} open request${openReqs.length===1?"":"s"}${shippedHidden ? ` · ${shippedHidden} shipped request${shippedHidden===1?"":"s"} hidden` : ""}`,
       cards,
@@ -1570,6 +1586,7 @@
     const totalReqs = cards.reduce((s,c) => s + c.rows.length, 0);
     return {
       kind: "list", listType: "entity", text,
+      filter: matches.customers.length ? { type: "customer", value: matches.customers[0] } : { type: matches.tags[0].type, value: matches.tags[0].value },
       title: `Here's what ${escapeHtml(matches.customers[0] || matches.tags[0].value)} is on.`,
       meta: `matched "${text.trim()}"`,
       cards,
@@ -1760,9 +1777,9 @@
   }
   function renderRequestsScreen(){
     const rc = state.requestsControls;
-    const visible = rc.shippedFilter === "hide" ? state.requests.filter(r => !isShipped(r))
+    const visible = (rc.shippedFilter === "hide" ? state.requests.filter(r => !isShipped(r))
       : rc.shippedFilter === "only" ? state.requests.filter(r => isShipped(r))
-      : state.requests;
+      : state.requests).filter(r => requestMatchesFilter(r, rc.filter));
     const sorted = visible.slice().sort((a,b) => scoreOf(b) - scoreOf(a));
     const groups = groupRequestsFor(sorted, rc.group);
     const maxTotal = Math.max(1, ...sorted.map(r => scoreOf(r)));
@@ -1794,10 +1811,10 @@
         </div>
       </div>
       <button class="new-request-link" id="newRequestBtn">+ New request</button>
-    </div>`;
+    </div>${rc.filter ? `<div class="filter-bar"><span class="filter-chip">${escapeHtml(filterLabel(rc.filter))}<button data-clear-filter="1" title="Show all requests">&#10005;</button></span></div>` : ""}`;
 
     if (state.requests.length === 0) return toolbar + `<div class="screen-empty">No feature requests yet. Ask what customers want in the box above.</div>`;
-    if (visible.length === 0) return toolbar + `<div class="screen-empty">${rc.shippedFilter === "only" ? "Nothing shipped yet." : "Nothing here — everything's shipped."}</div>`;
+    if (visible.length === 0) return toolbar + `<div class="screen-empty">${rc.shippedFilter === "only" ? "Nothing shipped yet." : rc.filter ? "No requests match this filter." : "Nothing here — everything's shipped."}</div>`;
 
     const legend = rc.layout === "ledger" ? `<div class="ledger-legend">
       <div class="item"><div class="swatch" style="background:var(--rust);"></div>Urgency</div>
@@ -1815,7 +1832,7 @@
       const similar = byCustomer && g.key !== null ? (dupHints.get(g.key) || []) : [];
       const hint = similar.length
         ? `<div class="g-hint">"${escapeHtml(similar[0])}"${similar.length > 1 ? ` and ${similar.length - 1} more` : ""} may be the same customer <button class="g-link" data-merge-customer="${escapeHtml(g.key)}">Merge</button></div>` : "";
-      const actions = g.key !== null ? `<div class="g-actions">${hint}<button class="g-link" data-edit-customer="${escapeHtml(g.key)}">Edit</button></div>` : "";
+      const actions = byCustomer && g.key !== null ? `<div class="g-actions">${hint}<button class="g-link" data-edit-customer="${escapeHtml(g.key)}">Edit</button></div>` : "";
       return `<div>
         <div class="req-group-head${g.noCustomer ? " no-customer" : ""}">
           <div class="g-name">${escapeHtml(groupLabel(rc.group, g.key))}</div>
@@ -2432,6 +2449,8 @@
     mainEl.querySelectorAll('[data-seg="layout"] button').forEach(b => { b.onclick = () => { state.requestsControls.layout = b.getAttribute("data-val"); saveState(); render(); }; });
     const shipSel = mainEl.querySelector("#shippedFilterSelect");
     if (shipSel) shipSel.onchange = () => { state.requestsControls.shippedFilter = shipSel.value; saveState(); render(); };
+    const clearFilter = mainEl.querySelector("[data-clear-filter]");
+    if (clearFilter) clearFilter.onclick = () => { state.requestsControls.filter = null; saveState(); render(); };
     const newReqBtn = mainEl.querySelector("#newRequestBtn");
     if (newReqBtn) newReqBtn.onclick = () => { pendingDraftFeedItem = null; pendingDraftClusterQuestionIds = null; openDraftFromText(""); };
     const viewsBtn = mainEl.querySelector("#viewsMenuBtn");
@@ -2442,21 +2461,28 @@
       b.onclick = (e) => {
         if (e.target.closest("[data-del-view]")) return;
         const v = state.views.find(x => x.id === b.getAttribute("data-load-view"));
-        if (v){ state.requestsControls = { group: v.group, layout: v.layout, shippedFilter: v.shippedFilter }; saveState(); render(); }
+        if (v){ state.requestsControls = { group: v.group, layout: v.layout, shippedFilter: v.shippedFilter, filter: v.filter || null }; saveState(); render(); }
       };
     });
     mainEl.querySelectorAll("[data-del-view]").forEach(b => {
       b.onclick = (e) => { e.stopPropagation(); state.views = state.views.filter(v => v.id !== b.getAttribute("data-del-view")); saveState(); render(); };
     });
     const saveViewOpen = mainEl.querySelector("[data-save-view-open]");
-    if (saveViewOpen) saveViewOpen.onclick = () => openOverlay("viewOverlay");
+    if (saveViewOpen) saveViewOpen.onclick = () => { saveViewFromAnswer = null; openOverlay("viewOverlay"); };
+    // From a customer/topic/quarter answer page: the view remembers that filter,
+    // and shows shipped requests too, since the answer page lists them.
     const saveViewBtn2 = mainEl.querySelector("[data-save-view]");
-    if (saveViewBtn2) saveViewBtn2.onclick = () => openOverlay("viewOverlay");
+    if (saveViewBtn2) saveViewBtn2.onclick = () => { saveViewFromAnswer = { filter: (state.currentAnswer && state.currentAnswer.filter) || null }; openOverlay("viewOverlay"); };
   }
+  let saveViewFromAnswer = null;
   document.getElementById("saveView").onclick = () => {
     const name = document.getElementById("vName").value.trim();
     if (!name) { document.getElementById("vName").focus(); return; }
-    const v = { id: uid("v"), name, group: state.requestsControls.group, layout: state.requestsControls.layout, shippedFilter: state.requestsControls.shippedFilter, builtin: false };
+    const fromAnswer = saveViewFromAnswer;
+    const v = { id: uid("v"), name, group: state.requestsControls.group, layout: state.requestsControls.layout,
+      shippedFilter: fromAnswer ? (fromAnswer.filter ? "all" : state.requestsControls.shippedFilter) : state.requestsControls.shippedFilter,
+      filter: fromAnswer ? fromAnswer.filter : (state.requestsControls.filter || null), builtin: false };
+    saveViewFromAnswer = null;
     state.views.push(v); saveState();
     closeOverlay("viewOverlay"); document.getElementById("vName").value = "";
     render();

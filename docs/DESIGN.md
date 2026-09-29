@@ -167,6 +167,17 @@ here whenever a non-obvious choice gets made, or gets questioned and kept.
   (with a one-off migration of existing timestamps); it wasn't done because
   cross-timezone use isn't expected for now.
 
+- **A saved view can carry a filter (one customer, topic or quarter).**
+  "Save as view" on a customer/topic/quarter answer page used to save only
+  Group by / Layout / Shipped, so the saved view didn't show what the page
+  had. A view now also stores `filter: { type, value }`, and loading it shows
+  the Requests screen narrowed to that, with a chip (✕ to clear) above the
+  list. Views saved from the answer page use "Shipped: included", since the
+  answer page lists shipped requests too. The "all quarters" answer has no
+  single value to filter on, so it saves no filter. A customer filter goes
+  through `requestsForCustomer()`, so it survives a rename or merge. Views
+  saved before this simply have no filter.
+
 ## UI & renderer
 
 - **"Unscheduled" is always offered in a request's Quarter dropdown, even
