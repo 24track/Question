@@ -136,7 +136,49 @@ here whenever a non-obvious choice gets made, or gets questioned and kept.
   is rebuilt, so a stale value in an old on-disk file can't linger there
   either.
 
+- **Shipped requests show a plain due date — never "overdue", never red.**
+  This is the display-side counterpart to the score entries above. A shipped
+  request's score is deliberately left alone (it can still carry overdue
+  points), but a finished item has nothing left to be late for, so the
+  request detail panel, request rows, matched-request card and the "Why it
+  ranks here" breakdown show just the date (e.g. "Sept 29"; "Due Sept 29" in
+  the breakdown) in neutral text. `dueLabelFor(r)` and `isDueSoon(r)` are
+  where this is decided (`isDueSoon` is false for anything shipped), so the
+  rule lives in one place. Don't "fix" the mismatch between a shipped
+  request's neutral label and its non-zero overdue score points — it's
+  intentional: the formula stays one honest thing, and what to show is a
+  presentation decision.
+- **Due dates are calendar dates, compared by local calendar day — not
+  instants.** A due date is stored as the timestamp of local midnight on the
+  chosen day, but it means "that day", not "that moment". `daysUntil()`
+  therefore compares the due date's local day with today's local day
+  (`Math.round` absorbs the 23/25-hour days around daylight-saving changes),
+  so a request due today reads "due today" from midnight to 23:59 and is
+  only "1d overdue" from the next day. The earlier version compared the
+  timestamp against the current time, which made anything due today read
+  "1d overdue" after midnight-relative rounding (and "0d overdue" or "due in
+  0d" at other times of day), and also scored it as overdue. The date picker
+  is filled from local date parts (`dateInputValue()`), because
+  `toISOString()` converts to UTC and showed the previous day in timezones
+  ahead of UTC. **Known limit, deliberately not handled:** because the value
+  is a local-midnight timestamp, moving the data between timezones (travel,
+  or syncing the `Question Data` folder across machines) can shift a due
+  date by a day. Storing a plain `YYYY-MM-DD` string instead would fix that
+  (with a one-off migration of existing timestamps); it wasn't done because
+  cross-timezone use isn't expected for now.
+
 ## UI & renderer
+
+- **"Unscheduled" is always offered in a request's Quarter dropdown, even
+  when no request currently uses it.** The dropdown is built from quarters
+  already in use (`knownQuarters()`), so once the last unscheduled request
+  was given a real quarter, "Unscheduled" vanished and a request could never
+  be moved back. It's now a fixed option, like Status's built-in values.
+  Deliberately *not* a "None" option that stores an empty value: the quarter
+  grouping already treats an empty quarter as "Unscheduled", but
+  `matchQuarterQuery()` only recognises "Unscheduled" when a request
+  literally carries that value, so an empty quarter would make "show me
+  Unscheduled" find nothing.
 
 - **A matched question no longer counts itself automatically — the person
   has to click "Count this ask" / "Link this question" on the Answer
