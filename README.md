@@ -165,10 +165,10 @@ npm run dist
 Uses `electron-builder` to produce an installer for whichever platform
 you're running it on, in `release/` (electron-builder doesn't reliably
 cross-build a mac installer from Windows or Linux, or vice versa). Tagged
-pushes to this repo build all three — `.dmg` (mac), an NSIS installer
-(Windows), and an AppImage (Linux) — automatically via GitHub Actions,
-one platform per runner, and attach them to a GitHub Release — see
-`.github/workflows/build.yml`.
+pushes to this repo build a `.dmg` (mac) and an AppImage (Linux)
+automatically via GitHub Actions, one platform per runner, and attach them
+to a GitHub Release — see `.github/workflows/build.yml`. There is no
+Windows installer; on Windows, run it from source with `npm start`.
 
 ## Status
 
