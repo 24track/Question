@@ -314,12 +314,25 @@
   .score-parts-grid .part-name { font-weight: 600; }
   .score-parts-grid .part-val { font-family: var(--font-mono); font-size: 12px; color: var(--ink-soft); }
   .req-modal-left .section-label { font-size: 13px; font-weight: 600; color: var(--ink-soft); }
-  .cust-chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
-  .cust-chip { font-size: 13.5px; padding: 5px 10px; border-radius: 5px; background: var(--paper-raised); border: 1px solid var(--rule); display: inline-flex; align-items: center; gap: 6px; }
-  .cust-chip .x { cursor: pointer; opacity: 0.6; }
-  .cust-chip .x:hover { opacity: 1; color: var(--rust); }
-  .cust-chip-add { font-size: 13.5px; padding: 5px 10px; border-radius: 5px; border: 1px dashed var(--rule-strong); color: var(--ink-soft); cursor: pointer; background: none; }
-  .cust-add-input { display: none; font-size: 13px; padding: 5px 8px; border-radius: 5px; border: 1px solid var(--rule-strong); }
+  /* Customer chip input + dropdown (4a/4b), shared by the new-request dialog and the request modal */
+  .ci-field { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 7px 8px; background: var(--paper-raised); border: 1px solid var(--rule-strong); border-radius: 8px; cursor: text; }
+  .ci-field:focus-within { border-color: var(--ink); box-shadow: 0 0 0 0.5px var(--ink); }
+  .ci-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; padding: 4px 6px 4px 10px; border-radius: 5px; background: var(--paper); border: 1px solid var(--rule); color: var(--ink); }
+  .ci-chip.is-new { border: 1px dashed var(--teal); }
+  .ci-chip .ci-new { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.04em; color: var(--teal); }
+  .ci-chip .ci-x { cursor: pointer; color: var(--ink-faint); font-size: 12px; padding: 0 3px; line-height: 1; }
+  .ci-chip .ci-x:hover { color: var(--rust); }
+  .ci-field input.ci-input[type=text] { flex: 1; width: auto; min-width: 120px; border: none; border-radius: 0; outline: none; background: transparent; font-family: var(--font-body); font-size: 14px; color: var(--ink); padding: 3px 2px; }
+  .cust-dropdown { position: fixed; z-index: 70; background: var(--paper-raised); border: 1px solid var(--rule-strong); border-radius: 8px; box-shadow: 0 12px 32px var(--shadow-modal); padding: 6px; overflow-y: auto; }
+  .cust-dropdown .cd-label { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.06em; color: var(--ochre); padding: 6px 10px 4px; }
+  .cust-dropdown .cd-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px; border-radius: 6px; font-size: 15px; cursor: pointer; }
+  .cust-dropdown .cd-row .cd-count { font-size: 13px; color: var(--ink-soft); white-space: nowrap; }
+  .cust-dropdown .cd-row.hl { background: var(--teal-soft); }
+  .cust-dropdown .cd-row.near.hl { background: var(--ochre-soft); }
+  .cust-dropdown .cd-add { color: var(--body-copy); font-size: 14px; }
+  .cust-dropdown .cd-divider { border-top: 1px solid var(--rule); margin: 4px 0; }
+  .cust-dropdown .cd-key { font-family: var(--font-mono); font-size: 11.5px; color: var(--ink-faint); border: 1px solid var(--rule); border-radius: 4px; padding: 1px 6px; white-space: nowrap; }
+  .cust-dropdown .cd-caption { font-size: 13px; color: var(--ink-faint); padding: 2px 10px 8px; }
   .linked-q-row { display: flex; justify-content: space-between; gap: 16px; padding: 9px 0; border-top: 1px solid var(--rule); font-size: 14px; }
   .linked-q-row .meta { font-family: var(--font-mono); font-size: 12px; color: var(--ink-faint); white-space: nowrap; }
   .show-more-link { padding: 9px 0; border-top: 1px solid var(--rule); font-size: 13.5px; color: var(--teal); font-weight: 600; cursor: pointer; background: none; border-left: none; border-right: none; border-bottom: none; text-align: left; }
@@ -378,7 +391,7 @@
     <div class="modal-sub">Pulled from what you typed. Review the suggested tags before saving — urgency, tags and quarter can all still be changed later.</div>
     <div class="field"><label for="dTitle">Title</label><input type="text" id="dTitle" /></div>
     <div class="field"><label for="dDesc">Description</label><textarea id="dDesc"></textarea></div>
-    <div class="field"><label for="dCustomers">Customers (comma separated)</label><input type="text" id="dCustomers" /></div>
+    <div class="field"><label>Customers</label><div id="dCustomers"></div></div>
     <div class="field"><label>Suggested tags</label><div id="dTags"></div></div>
     <div class="modal-actions">
       <button class="btn-secondary" id="discardDraft">Discard</button>
@@ -687,6 +700,239 @@
       tMatches = tags.filter(t => t.value.toLowerCase().includes(q));
     }
     return { customers: cMatches, tags: tMatches };
+  }
+
+  // ---------------- Customer chip input (shared) ----------------
+  // One input used everywhere a customer is entered (the new-request dialog
+  // and the request modal), so you can see whether a name already exists
+  // while typing. See docs/DESIGN.md, "Customers".
+  const CUSTOMER_SUFFIXES = new Set(["ltd","limited","inc","incorporated","co","corp","corporation","llc","plc","gmbh","pty"]);
+  function normCustomer(s){ return (s||"").toLowerCase().replace(/\s+/g, " ").trim(); }
+  // Lowercased, punctuation removed, trailing company suffixes (Ltd, Inc, Co…) dropped.
+  function stripCustomerSuffix(s){
+    const words = normCustomer(s).replace(/[.,;:'"()&!]/g, " ").split(/\s+/).filter(Boolean);
+    while (words.length > 1 && CUSTOMER_SUFFIXES.has(words[words.length-1])) words.pop();
+    return words.join(" ");
+  }
+  function editDistance(a, b){
+    const prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+    for (let i = 1; i <= a.length; i++){
+      let diag = prev[0]; prev[0] = i;
+      for (let j = 1; j <= b.length; j++){
+        const tmp = prev[j];
+        prev[j] = Math.min(prev[j] + 1, prev[j-1] + 1, diag + (a[i-1] === b[j-1] ? 0 : 1));
+        diag = tmp;
+      }
+    }
+    return prev[b.length];
+  }
+  // Every distinct customer spelling in use, with how many requests carry it.
+  function customerCounts(){
+    const m = new Map();
+    state.requests.forEach(r => r.customers.forEach(c => m.set(c, (m.get(c) || 0) + 1)));
+    return m;
+  }
+  // What the dropdown shows for the text typed so far. `chosen` are the names
+  // already on this request (left out of the suggestions).
+  // kind: "exact" | "partial" | "near" | "new" | "already" | "none"
+  function customerSuggestions(typed, counts, chosen){
+    const t = normCustomer(typed);
+    if (!t) return { kind: "none", rows: [], canAdd: false };
+    const taken = new Set(chosen.map(normCustomer));
+    const all = Array.from(counts.entries()).map(([name, count]) => ({ name, count }))
+      .filter(c => !taken.has(normCustomer(c.name)))
+      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+    const partial = all.filter(c => normCustomer(c.name).includes(t));
+    if (taken.has(t)) return { kind: "already", rows: partial, canAdd: false };
+    // 1. Same name ignoring case/spacing: no "add" row, Enter uses the existing spelling.
+    const exact = all.filter(c => normCustomer(c.name) === t);
+    if (exact.length) return { kind: "exact", rows: exact.concat(partial.filter(c => !exact.includes(c))), canAdd: false };
+    // 2. Part of an existing name.
+    if (partial.length) return { kind: "partial", rows: partial, canAdd: true };
+    // 3. Likely typo or variant: same once suffix/punctuation is stripped, or a
+    //    letter or two apart. Only for names of 5+ letters (1 apart up to 7
+    //    letters, 2 apart from 8) so short names don't false-match.
+    const ts = stripCustomerSuffix(typed);
+    const near = [];
+    all.forEach(c => {
+      const cs = stripCustomerSuffix(c.name);
+      let d = null;
+      if (cs === ts) d = 0;
+      else {
+        const shortest = Math.min(cs.length, ts.length);
+        if (shortest >= 5){
+          const dist = editDistance(cs, ts);
+          if (dist <= (shortest >= 8 ? 2 : 1)) d = dist;
+        }
+      }
+      if (d !== null) near.push({ name: c.name, count: c.count, d });
+    });
+    near.sort((a, b) => a.d - b.d || b.count - a.count || a.name.localeCompare(b.name));
+    if (near.length) return { kind: "near", rows: near, canAdd: true };
+    // 4. Genuinely new.
+    return { kind: "new", rows: [], canAdd: true };
+  }
+
+  let custDropdownEl = null;
+  function custDropdown(){
+    if (!custDropdownEl){
+      custDropdownEl = document.createElement("div");
+      custDropdownEl.className = "cust-dropdown";
+      custDropdownEl.style.display = "none";
+      custDropdownEl.addEventListener("mousedown", e => e.preventDefault()); // keep focus in the input
+      document.body.appendChild(custDropdownEl);
+    }
+    return custDropdownEl;
+  }
+  function hideCustDropdown(){ if (custDropdownEl) custDropdownEl.style.display = "none"; }
+
+  // opts: { values, placeholder, commitOnBlur, onChange(values, { viaBlur }) }
+  function createCustomerInput(mount, opts){
+    opts = opts || {};
+    let chips = (opts.values || []).map(name => ({ name, isNew: false }));
+    let sugg = { kind: "none", rows: [], canAdd: false };
+    let items = [];
+    let hl = -1;
+    mount.innerHTML = "";
+    const field = document.createElement("div");
+    field.className = "ci-field";
+    const input = document.createElement("input");
+    input.type = "text"; input.className = "ci-input"; input.autocomplete = "off"; input.spellcheck = false;
+    input.placeholder = opts.placeholder || "Add a customer…";
+    field.appendChild(input);
+    mount.appendChild(field);
+
+    const values = () => chips.map(c => c.name);
+    const knownLower = () => new Set(Array.from(customerCounts().keys()).map(normCustomer));
+    function notify(viaBlur){ if (opts.onChange) opts.onChange(values(), { viaBlur: !!viaBlur }); }
+
+    function paintChips(){
+      field.querySelectorAll(".ci-chip").forEach(el => el.remove());
+      chips.forEach((c, i) => {
+        const el = document.createElement("span");
+        el.className = "ci-chip" + (c.isNew ? " is-new" : "");
+        el.innerHTML = `${escapeHtml(c.name)}${c.isNew ? ` <span class="ci-new">NEW</span>` : ""}<span class="ci-x" title="Remove">&#10005;</span>`;
+        el.querySelector(".ci-x").onclick = ev => { ev.stopPropagation(); chips.splice(i, 1); paintChips(); hideCustDropdown(); notify(); input.focus(); };
+        field.insertBefore(el, input);
+      });
+    }
+    // Add several names at once (one notify, so autosave re-renders once).
+    function addNames(list, viaBlur){
+      const known = knownLower();
+      let changed = false;
+      list.forEach(({ name, isNew }) => {
+        const n = (name || "").replace(/\s+/g, " ").trim();
+        if (!n || chips.some(c => normCustomer(c.name) === normCustomer(n))) return;
+        chips.push({ name: n, isNew: isNew === undefined ? !known.has(normCustomer(n)) : isNew });
+        changed = true;
+      });
+      input.value = "";
+      paintChips();
+      hideCustDropdown();
+      if (changed) notify(viaBlur);
+    }
+    // Typed text taken literally (comma / blur / save): the existing spelling if
+    // the name matches one ignoring case, otherwise a new customer.
+    function literalName(text){
+      const t = normCustomer(text);
+      const hit = Array.from(customerCounts().entries()).filter(([n]) => normCustomer(n) === t).sort((a, b) => b[1] - a[1])[0];
+      return hit ? { name: hit[0], isNew: false } : { name: text.trim(), isNew: true };
+    }
+
+    function refresh(){
+      if (!mount.isConnected){ hideCustDropdown(); return; }
+      const typed = input.value.trim();
+      sugg = customerSuggestions(typed, customerCounts(), values());
+      items = sugg.rows.map(r => ({ type: "existing", name: r.name }));
+      if (sugg.canAdd) items.push({ type: "add", name: typed });
+      hl = sugg.kind === "already" ? -1 : (items.length ? 0 : -1);
+      paint();
+    }
+    function paint(){
+      const dd = custDropdown();
+      if (!mount.isConnected || sugg.kind === "none"){ hideCustDropdown(); return; }
+      const typed = input.value.trim();
+      const tl = typed.toLowerCase();
+      const rowHtml = (r, i) => {
+        let nameHtml = escapeHtml(r.name);
+        if (sugg.kind === "partial" || sugg.kind === "exact"){
+          const at = r.name.toLowerCase().indexOf(tl);
+          if (at >= 0) nameHtml = escapeHtml(r.name.slice(0, at)) + "<b>" + escapeHtml(r.name.slice(at, at + typed.length)) + "</b>" + escapeHtml(r.name.slice(at + typed.length));
+        } else if (sugg.kind === "near" && i === 0) nameHtml = "<b>" + nameHtml + "</b>";
+        return `<div class="cd-row ${sugg.kind === "near" ? "near " : ""}${i === hl ? "hl" : ""}" data-i="${i}"><span>${nameHtml}</span><span class="cd-count">${r.count} request${r.count === 1 ? "" : "s"}</span></div>`;
+      };
+      let html = "";
+      if (sugg.kind === "near") html += `<div class="cd-label">DID YOU MEAN</div>`;
+      html += sugg.rows.map(rowHtml).join("");
+      if (sugg.kind === "already") html += `<div class="cd-caption">“${escapeHtml(typed)}” is already on this request.</div>`;
+      if (sugg.canAdd){
+        const ai = items.length - 1;
+        if (sugg.rows.length) html += `<div class="cd-divider"></div>`;
+        const key = sugg.kind === "near" ? "⇧ Enter" : sugg.kind === "new" ? "Enter" : "";
+        html += `<div class="cd-row cd-add ${ai === hl ? "hl" : ""}" data-i="${ai}"><span>Add <b>“${escapeHtml(typed)}”</b> as a new customer</span>${key ? `<span class="cd-key">${key}</span>` : ""}</div>`;
+        if (sugg.kind === "new") html += `<div class="cd-caption">No existing customer is similar.</div>`;
+      }
+      dd.innerHTML = html;
+      dd.onclick = e => { const row = e.target.closest("[data-i]"); if (row) pick(+row.getAttribute("data-i")); };
+      dd.style.display = "block";
+      place(dd);
+    }
+    function place(dd){
+      const rect = field.getBoundingClientRect();
+      dd.style.left = rect.left + "px"; dd.style.width = rect.width + "px";
+      const below = window.innerHeight - rect.bottom - 12, above = rect.top - 12;
+      if (below < 240 && above > below){ dd.style.top = ""; dd.style.bottom = (window.innerHeight - rect.top + 6) + "px"; dd.style.maxHeight = Math.max(160, above) + "px"; }
+      else { dd.style.bottom = ""; dd.style.top = (rect.bottom + 6) + "px"; dd.style.maxHeight = Math.max(160, below) + "px"; }
+    }
+    function pick(i){
+      const it = items[i];
+      if (!it) return;
+      addNames([it.type === "add" ? { name: it.name, isNew: true } : { name: it.name, isNew: false }]);
+      input.focus();
+    }
+
+    input.addEventListener("input", () => {
+      if (input.value.includes(",")){
+        const parts = input.value.split(",");
+        const rest = parts.pop();
+        addNames(parts.filter(p => p.trim()).map(literalName));
+        input.value = rest;
+      }
+      refresh();
+    });
+    input.addEventListener("keydown", e => {
+      if (e.key === "ArrowDown" || e.key === "ArrowUp"){
+        if (!items.length) return;
+        e.preventDefault();
+        hl = e.key === "ArrowDown" ? (hl + 1) % items.length : (hl <= 0 ? items.length - 1 : hl - 1);
+        paint();
+      } else if (e.key === "Enter"){
+        e.preventDefault();
+        if (!input.value.trim()) return;
+        if (e.shiftKey && sugg.canAdd){ pick(items.length - 1); return; }
+        if (hl >= 0) pick(hl); else input.value = "", refresh();
+      } else if (e.key === "Backspace" && input.value === "" && chips.length){
+        chips.pop(); paintChips(); hideCustDropdown(); notify();
+      } else if (e.key === "Escape"){
+        hideCustDropdown();
+      }
+    });
+    input.addEventListener("blur", () => {
+      hideCustDropdown();
+      if (opts.commitOnBlur && input.value.trim()) addNames([literalName(input.value)], true);
+    });
+    field.addEventListener("click", e => { if (e.target === field) input.focus(); });
+    window.addEventListener("resize", () => { if (mount.isConnected && custDropdownEl && custDropdownEl.style.display !== "none") place(custDropdownEl); });
+
+    paintChips();
+    return {
+      getValues: values,
+      focus: () => input.focus(),
+      // Text typed but not yet committed (e.g. the person clicks Save) is kept, not lost.
+      commitPending: () => { if (input.value.trim()) addNames([literalName(input.value)]); },
+      // Prefill (e.g. names found in a typed question): existing spelling if known, else marked new.
+      setValues: list => { chips = []; input.value = ""; addNames((list || []).map(literalName)); if (!list || !list.length) paintChips(); },
+    };
   }
   function parseQuarterSort(q){
     const m = /^Q([1-4])\s+(\d{4})$/.exec(q || "");
@@ -1476,11 +1722,7 @@
           </div>
           <div>
             <div class="section-label">Customers asking (${r.customers.length})</div>
-            <div class="cust-chip-row" id="customerChips" style="margin-top:10px;">
-              ${r.customers.map((c,i) => `<span class="cust-chip">${escapeHtml(c)}<span class="x" data-remove-cust="${i}" title="Remove">&#10005;</span></span>`).join("")}
-              <button class="cust-chip-add" id="addCustomerToggle">+ Add</button>
-              <input type="text" id="addCustomerInput" class="cust-add-input" placeholder="Customer name, press Enter" />
-            </div>
+            <div id="customerChips" style="margin-top:10px;"></div>
           </div>
           <div style="min-height:0;">
             <div class="section-label">Questions linked to this (${linkedQ.length})</div>
@@ -1539,6 +1781,7 @@
       </div>`;
     wireRequestModal(r, id, showCount, linkedQ);
     openOverlay("detailOverlay");
+    if (pendingCustomerInput){ pendingCustomerInput.focus(); pendingCustomerInput = null; }
   }
   function wireRequestModal(r, id, showCount, linkedQ){
     const modal = document.getElementById("detailModal");
@@ -1594,25 +1837,20 @@
       r.updatedAt = Date.now(); saveState(); openRequestDetail(id);
     };
 
-    modal.querySelectorAll("[data-remove-cust]").forEach(el => {
-      el.onclick = (ev) => {
-        ev.stopPropagation();
-        r.customers.splice(+el.getAttribute("data-remove-cust"), 1);
-        r.updatedAt = Date.now(); saveState(); openRequestDetail(id);
-      };
+    // Customers autosave like the other fields. The modal re-renders after each
+    // change (score, rank and counts all depend on it), so keep typing focus by
+    // re-focusing the new input, except when the change came from clicking away.
+    const custInput = createCustomerInput(document.getElementById("customerChips"), {
+      values: r.customers, commitOnBlur: true, placeholder: "Add a customer…",
+      onChange: (list, meta) => {
+        r.customers = list.slice(); r.updatedAt = Date.now(); saveState();
+        refocusCustomerInput = !meta.viaBlur;
+        openRequestDetail(id);
+      },
     });
-    const addToggle = document.getElementById("addCustomerToggle");
-    const addInput = document.getElementById("addCustomerInput");
-    addToggle.onclick = () => { addToggle.style.display = "none"; addInput.style.display = "inline-block"; addInput.focus(); };
-    function commitAddCustomer(){
-      const val = addInput.value.trim();
-      if (!val) return;
-      if (r.customers.some(c => c.toLowerCase() === val.toLowerCase())) { addInput.value = ""; return; }
-      r.customers.push(val); r.updatedAt = Date.now(); saveState();
-      openRequestDetail(id);
-    }
-    addInput.addEventListener("keydown", e => { if (e.key === "Enter"){ e.preventDefault(); commitAddCustomer(); } });
-    addInput.addEventListener("blur", commitAddCustomer);
+    // Focus has to wait until the overlay is reopened (openRequestDetail closes it while it re-renders).
+    pendingCustomerInput = refocusCustomerInput ? custInput : null;
+    refocusCustomerInput = false;
 
     const showMore = document.getElementById("showMoreLinkedQ");
     if (showMore) showMore.onclick = () => {
@@ -1767,13 +2005,17 @@
   // gets linked to the newly created request on save.
   let pendingDraftClusterQuestionIds = null;
 
+  let refocusCustomerInput = false; // set by the request modal's customer input, read after its re-render
+  let pendingCustomerInput = null;  // the new modal's customer input, focused once the overlay is open again
+  const draftCustomers = createCustomerInput(document.getElementById("dCustomers"), { commitOnBlur: true });
+
   function openDraftFromText(text){
     const cleaned = text.replace(/^raise (a )?(new )?feature request( for)?[:]?/i, "").trim();
     const firstSentenceEnd = cleaned.search(/[.!?]/);
     const title = (firstSentenceEnd > 0 ? cleaned.slice(0, firstSentenceEnd) : cleaned).slice(0,80);
     document.getElementById("dTitle").value = title.charAt(0).toUpperCase()+title.slice(1);
     document.getElementById("dDesc").value = cleaned;
-    document.getElementById("dCustomers").value = extractCustomers(cleaned).join(", ");
+    draftCustomers.setValues(extractCustomers(cleaned));
     pendingTags = suggestTags(cleaned);
     renderDraftTags();
     openOverlay("draftOverlay");
@@ -1802,14 +2044,15 @@
     });
   }
   document.getElementById("discardDraft").onclick = () => {
-    document.getElementById("dTitle").value = ""; document.getElementById("dDesc").value = ""; document.getElementById("dCustomers").value = "";
+    document.getElementById("dTitle").value = ""; document.getElementById("dDesc").value = ""; draftCustomers.setValues([]);
     pendingTags = []; renderDraftTags(); pendingDraftFeedItem = null; pendingDraftClusterQuestionIds = null;
     closeOverlay("draftOverlay");
   };
   document.getElementById("saveDraft").onclick = () => {
     const title = document.getElementById("dTitle").value.trim() || "Untitled request";
     const description = document.getElementById("dDesc").value.trim();
-    const customers = document.getElementById("dCustomers").value.split(",").map(s=>s.trim()).filter(Boolean);
+    draftCustomers.commitPending();
+    const customers = draftCustomers.getValues();
     const urgencyTag = pendingTags.find(t => t.type === "urgency");
     const urgency = urgencyTag ? urgencyTag.value : "medium";
     const topicTag = pendingTags.find(t => t.type === "topic");
@@ -1831,7 +2074,7 @@
       pendingDraftClusterQuestionIds = null;
     }
     saveState();
-    document.getElementById("dTitle").value = ""; document.getElementById("dDesc").value = ""; document.getElementById("dCustomers").value = "";
+    document.getElementById("dTitle").value = ""; document.getElementById("dDesc").value = ""; draftCustomers.setValues([]);
     pendingTags = []; renderDraftTags();
     closeOverlay("draftOverlay");
     state.activeScreen = "now"; state.currentAnswer = null;

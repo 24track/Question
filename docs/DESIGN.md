@@ -233,6 +233,47 @@ here whenever a non-obvious choice gets made, or gets questioned and kept.
   the "right" split depends on window size and how someone actually uses
   the conversation panel, so it's a preference, not a constant.
 
+## Customers
+
+- **Customers are free text, so one shared chip input (`createCustomerInput()`)
+  is used everywhere a customer is entered — the new-request dialog and the
+  request modal — to show whether a name already exists while you type.**
+  Before it, customers were a comma-separated field and a bare "+ Add" box,
+  so there was no way to see existing names, and near-duplicates ("Acme" /
+  "acme" / "Acme Ltd") piled up. The dropdown is driven by
+  `customerSuggestions()`, in this priority order: same name ignoring
+  case/spacing (highlights the existing spelling, no "Add" row); the typed text
+  appearing anywhere in an existing name; a likely typo or variant ("Did you
+  mean…", "Add" needs Shift+Enter or a click); genuinely new.
+- **Suggestions never merge anything by themselves, and what counts as
+  "similar" is deliberately narrow.** "Acme", "Acme Financial" and "Acme
+  Loans" can all be genuinely different customers, so only a trailing company
+  suffix (Ltd, Inc, Co, LLC…) or punctuation counts as a variant, plus a
+  small typo margin: names must be at least 5 letters, and are 1 letter apart
+  up to 7 letters or 2 apart from 8. That is tighter than "within 1–2 letters"
+  in the handoff README, on purpose — on short names a 2-letter margin
+  false-matches ("Acme" vs "Acne"). A wrongly suggested customer is a
+  mistake the person has to notice; a missed suggestion just means a new
+  customer, which the merge step (below) can clean up later.
+- **Typed text is never silently lost.** Comma, clicking away and saving the
+  request all commit whatever is typed, taken literally — using the existing
+  spelling if it matches one ignoring case, otherwise as a new customer,
+  marked NEW (dashed chip) until the request is saved. Enter, by contrast,
+  picks the highlighted suggestion. The request modal autosaves and
+  re-renders after each change, so it re-focuses the input afterwards, except
+  when the change came from clicking away.
+- **Decided for the rename/merge step (not built yet): merges use a small
+  alias list, not rewritten question text, and there is no "Not the same"
+  dismissal.** A question has no customer field; its customer is parsed out of
+  its own text (`parseCustomerFromText()`). Merging "Acme Ltd" into "Acme"
+  relabels the customers on requests (linked questions come along, since
+  they're linked to the request), and records "Acme Ltd" → "Acme" in settings
+  so a question that still says "Acme Ltd" resolves to "Acme" in the customer
+  chip and Trends counts. The person's own words are never edited. The
+  "may be the same customer · Merge" hint on Group by Customer will show for
+  customers that are separate on purpose; a way to dismiss it was
+  considered and left out until someone actually finds it annoying.
+
 ## Security
 
 - **Electron shell runs with `contextIsolation` on, `nodeIntegration` off, a
