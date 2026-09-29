@@ -225,10 +225,14 @@
   .req-group-head { display: flex; align-items: baseline; gap: 12px; padding: 6px 0 10px; border-bottom: 1.5px solid var(--ink); }
   .req-group-head .g-name { font-size: 17px; font-weight: 600; }
   .req-group-head .g-meta { font-size: 13px; }
+  .req-group-head .g-hint { margin-left: auto; font-size: 13px; background: var(--ochre-soft); color: var(--ochre-text-1); border-radius: 5px; padding: 3px 9px; }
+  .req-group-head.no-customer { border-bottom: 1.5px dashed var(--rule-strong); }
+  .req-note { font-size: 13px; color: var(--ink-faint); background: var(--paper-raised); border-top: 1px solid var(--rule); padding: 14px 40px; }
   .req-row { display: grid; grid-template-columns: 320px minmax(0,1fr) 120px; gap: 24px; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--rule); cursor: pointer; }
   .req-row:hover { background: var(--teal-soft); }
   .req-row .r-main .r-title { font-weight: 600; font-size: 15.5px; }
   .req-row .r-main .r-customers { font-size: 13px; color: var(--ink-soft); margin-top: 3px; }
+  .req-row .r-main .r-customers.only { color: var(--ink-faint); }
   .req-row .r-list-cols { display: flex; gap: 28px; align-items: center; font-size: 13.5px; color: var(--ink-soft); }
   .req-row .r-list-cols .col-status { width: 110px; font-weight: 500; }
   .req-row .r-list-cols .col-urgency { width: 90px; }
@@ -726,6 +730,19 @@
     }
     return prev[b.length];
   }
+  // How alike two customer names are: 0 when they're the same once punctuation
+  // and a trailing suffix (Ltd, Inc, Co…) are ignored, a small number for a
+  // likely typo, null when they should be treated as different customers. Only
+  // names of 5+ letters can be typos of each other (1 letter apart up to 7
+  // letters, 2 apart from 8), so short names don't false-match ("Acme"/"Acne").
+  function customerSimilarity(a, b){
+    const as = stripCustomerSuffix(a), bs = stripCustomerSuffix(b);
+    if (as === bs) return 0;
+    const shortest = Math.min(as.length, bs.length);
+    if (shortest < 5) return null;
+    const dist = editDistance(as, bs);
+    return dist <= (shortest >= 8 ? 2 : 1) ? dist : null;
+  }
   // Every distinct customer spelling in use, with how many requests carry it.
   function customerCounts(){
     const m = new Map();
@@ -752,25 +769,35 @@
     // 3. Likely typo or variant: same once suffix/punctuation is stripped, or a
     //    letter or two apart. Only for names of 5+ letters (1 apart up to 7
     //    letters, 2 apart from 8) so short names don't false-match.
-    const ts = stripCustomerSuffix(typed);
     const near = [];
     all.forEach(c => {
-      const cs = stripCustomerSuffix(c.name);
-      let d = null;
-      if (cs === ts) d = 0;
-      else {
-        const shortest = Math.min(cs.length, ts.length);
-        if (shortest >= 5){
-          const dist = editDistance(cs, ts);
-          if (dist <= (shortest >= 8 ? 2 : 1)) d = dist;
-        }
-      }
+      const d = customerSimilarity(typed, c.name);
       if (d !== null) near.push({ name: c.name, count: c.count, d });
     });
     near.sort((a, b) => a.d - b.d || b.count - a.count || a.name.localeCompare(b.name));
     if (near.length) return { kind: "near", rows: near, canAdd: true };
     // 4. Genuinely new.
     return { kind: "new", rows: [], canAdd: true };
+  }
+
+  // For the Requests screen's Group by Customer: which customers may be the same
+  // as another one. Maps a customer to the similar names that have fewer
+  // requests (ties go to the alphabetically first name), so the hint shows on
+  // the bigger customer only.
+  function customerDuplicateHints(){
+    const counts = customerCounts();
+    const names = Array.from(counts.keys());
+    const hints = new Map();
+    names.forEach(a => {
+      const smaller = [];
+      names.forEach(b => {
+        if (a === b || customerSimilarity(a, b) === null) return;
+        const ca = counts.get(a), cb = counts.get(b);
+        if (ca > cb || (ca === cb && a.localeCompare(b) < 0)) smaller.push({ name: b, count: cb });
+      });
+      if (smaller.length) hints.set(a, smaller.sort((x, y) => y.count - x.count || x.name.localeCompare(y.name)).map(x => x.name));
+    });
+    return hints;
   }
 
   let custDropdownEl = null;
@@ -1500,6 +1527,20 @@
   }
   function groupRequestsFor(list, group){
     if (group === "none") return [{ key: null, items: list }];
+    if (group === "customer"){
+      // A request with several customers is listed under each of them, so the
+      // group counts add up to more than the number of requests. Biggest
+      // customer first, then A–Z; requests with no customer go last.
+      const byCustomer = new Map(), noCustomer = [];
+      list.forEach(r => {
+        if (!r.customers.length) noCustomer.push(r);
+        else new Set(r.customers).forEach(c => { if (!byCustomer.has(c)) byCustomer.set(c, []); byCustomer.get(c).push(r); });
+      });
+      const out = Array.from(byCustomer.entries()).map(([key, items]) => ({ key, items }))
+        .sort((a, b) => b.items.length - a.items.length || a.key.localeCompare(b.key));
+      if (noCustomer.length) out.push({ key: null, items: noCustomer, noCustomer: true });
+      return out;
+    }
     const groups = {};
     list.forEach(r => {
       let key;
@@ -1529,6 +1570,7 @@
     if (group === "urgency") return key === "unset" ? "No urgency set" : key.charAt(0).toUpperCase()+key.slice(1);
     if (group === "topic") return key === "untagged" ? "Untagged" : key.charAt(0).toUpperCase()+key.slice(1);
     if (group === "quarter") return key;
+    if (group === "customer") return key === null ? "No customer" : key;
     return "All open requests · by priority score";
   }
   function renderRequestsScreen(){
@@ -1544,7 +1586,7 @@
       <div class="requests-title">Requests</div>
       <div class="control-group"><div class="control-label">Group by</div>
         <div class="segmented" data-seg="group">
-          ${["quarter","urgency","topic","none"].map(g => `<button data-val="${g}" class="${rc.group===g?"active":""}">${g==="none"?"None":g.charAt(0).toUpperCase()+g.slice(1)}</button>`).join("")}
+          ${["quarter","urgency","topic","customer","none"].map(g => `<button data-val="${g}" class="${rc.group===g?"active":""}">${g==="none"?"None":g.charAt(0).toUpperCase()+g.slice(1)}</button>`).join("")}
         </div>
       </div>
       <div class="control-group"><div class="control-label">Layout</div>
@@ -1580,24 +1622,43 @@
       <div class="item"><div class="swatch" style="background:var(--rule-strong);"></div>Age</div>
     </div>` : "";
 
+    const byCustomer = rc.group === "customer";
+    const dupHints = byCustomer ? customerDuplicateHints() : null;
     const body = `<div class="req-groups">${groups.map(g => {
       const meta = rc.group === "quarter" ? groupMeta(rc.group, g.key, g.items) : { text: "", color: "" };
+      const count = byCustomer ? `${g.items.length} request${g.items.length===1?"":"s"}` : g.items.length;
+      const similar = byCustomer && g.key !== null ? (dupHints.get(g.key) || []) : [];
+      const hint = similar.length
+        ? `<div class="g-hint">"${escapeHtml(similar[0])}"${similar.length > 1 ? ` and ${similar.length - 1} more` : ""} may be the same customer</div>` : "";
       return `<div>
-        <div class="req-group-head">
+        <div class="req-group-head${g.noCustomer ? " no-customer" : ""}">
           <div class="g-name">${escapeHtml(groupLabel(rc.group, g.key))}</div>
-          <div class="mono-meta">${g.items.length}</div>
+          <div class="mono-meta">${count}</div>
           ${meta.text ? `<div class="g-meta" style="color:${meta.color};">${meta.text}</div>` : ""}
+          ${hint}
         </div>
-        ${g.items.map(r => renderRequestRow(r, rc.layout, maxTotal)).join("")}
+        ${g.items.map(r => renderRequestRow(r, rc.layout, maxTotal, byCustomer ? { customer: g.key } : null)).join("")}
       </div>`;
     }).join("")}</div>`;
 
-    return toolbar + legend + body;
+    // Only claim the counts overlap if some request really is listed twice.
+    const note = byCustomer
+      ? `<div class="req-note">Customers with the most requests come first.${visible.some(r => new Set(r.customers).size > 1) ? " Group counts add up to more than the number of requests, because a shared request is listed once per customer." : ""}</div>` : "";
+
+    return toolbar + legend + body + note;
   }
-  function renderRequestRow(r, layout, maxTotal){
+  // ctx (Group by Customer only): { customer } is the group's customer, so the
+  // second line names the request's *other* customers, or "only" this one.
+  function renderRequestRow(r, layout, maxTotal, ctx){
     const dueTxt = r.dueDate ? dueLabelFor(r) : "no due date";
     const dueSoon = isDueSoon(r);
-    const custStr = r.customers.length > 2 ? `${r.customers.slice(0,2).join(", ")} +${r.customers.length-2}` : r.customers.join(", ");
+    let custStr = r.customers.length > 2 ? `${r.customers.slice(0,2).join(", ")} +${r.customers.length-2}` : r.customers.join(", ");
+    let custClass = "r-customers";
+    if (ctx && ctx.customer !== null && ctx.customer !== undefined){
+      const others = r.customers.filter(c => c !== ctx.customer);
+      if (others.length) custStr = "also " + others.join(", ");
+      else { custStr = "only " + ctx.customer; custClass += " only"; }
+    }
     let midCol;
     if (layout === "ledger"){
       const parts = scorePartsArray(r);
@@ -1611,7 +1672,7 @@
       </div>`;
     }
     return `<div class="req-row" data-open-req="${r.id}">
-      <div class="r-main"><div class="r-title">${escapeHtml(r.title)}</div><div class="r-customers">${escapeHtml(custStr) || "no customers logged"}</div></div>
+      <div class="r-main"><div class="r-title">${escapeHtml(r.title)}</div><div class="${custClass}">${escapeHtml(custStr) || "no customers logged"}</div></div>
       ${midCol}
       <div class="r-due${dueSoon?" soon":""}">${escapeHtml(dueTxt)}</div>
     </div>`;

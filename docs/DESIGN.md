@@ -262,6 +262,21 @@ here whenever a non-obvious choice gets made, or gets questioned and kept.
   picks the highlighted suggestion. The request modal autosaves and
   re-renders after each change, so it re-focuses the input afterwards, except
   when the change came from clicking away.
+- **Requests → Group by Customer lists a request under every one of its
+  customers, so group counts deliberately add up to more than the number of
+  requests.** One row per customer-request pair is the only way to answer
+  "what has Halden asked for?" from a grouped list. The footer note only says
+  so when some request really is listed twice. Groups run biggest customer
+  first, then A–Z, with requests that have no customer in a last "No
+  customer" group (dashed rule). Counts follow the existing Shipped filter,
+  like every other grouping, so they match what's on screen. The second line
+  of each row names the request's *other* customers ("also …") or "only …",
+  since the group header already says which customer it's under. The
+  "may be the same customer" hint reuses the dropdown's similarity rule
+  (`customerSimilarity()`) and shows only on the customer with more requests
+  (ties: the alphabetically first), so a pair is flagged once, not twice.
+  The hint is text only for now — its "Merge" link and each header's "Edit"
+  link arrive with the rename/merge dialog.
 - **Decided for the rename/merge step (not built yet): merges use a small
   alias list, not rewritten question text, and there is no "Not the same"
   dismissal.** A question has no customer field; its customer is parsed out of
