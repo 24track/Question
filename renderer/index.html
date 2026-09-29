@@ -1631,7 +1631,7 @@
         <div class="answer-card first-ask-body">
           <p>Your question is logged. It won't sit in a backlog. If someone else asks something similar, the two will show up together as a theme under <b>Asked for, but not tracked</b>.</p>
           <div style="display:flex;gap:10px;">
-            <button class="btn-secondary" data-raise-first="1">Raise it anyway</button>
+            <button class="btn-secondary" data-raise-first="1">Raise it</button>
             <button class="btn-link" data-rephrase="1">Rephrase</button>
           </div>
         </div>`;
@@ -2248,7 +2248,7 @@
   // match onto the new request, same as before.
   let pendingDraftFeedItem = null;
   // Set when a draft is opened from a theme/cluster ("Raise request") or from
-  // "Raise it anyway" (State C, a single question) — every question id here
+  // "Raise it" (State C, a single question) — every question id here
   // gets linked to the newly created request on save.
   let pendingDraftClusterQuestionIds = null;
 
@@ -2324,7 +2324,10 @@
     document.getElementById("dTitle").value = ""; document.getElementById("dDesc").value = ""; draftCustomers.setValues([]);
     pendingTags = []; renderDraftTags();
     closeOverlay("draftOverlay");
-    state.activeScreen = "now"; state.currentAnswer = null;
+    // Stay on the screen the request was raised from. The Ask screen is the one
+    // exception: its answer card is about the question that was just turned
+    // into a request, so leaving it up would offer to raise it twice.
+    if (state.activeScreen === "answer"){ state.activeScreen = "now"; state.currentAnswer = null; }
     render();
   };
 
