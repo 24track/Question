@@ -275,19 +275,40 @@ here whenever a non-obvious choice gets made, or gets questioned and kept.
   "may be the same customer" hint reuses the dropdown's similarity rule
   (`customerSimilarity()`) and shows only on the customer with more requests
   (ties: the alphabetically first), so a pair is flagged once, not twice.
-  The hint is text only for now — its "Merge" link and each header's "Edit"
-  link arrive with the rename/merge dialog.
-- **Decided for the rename/merge step (not built yet): merges use a small
-  alias list, not rewritten question text, and there is no "Not the same"
-  dismissal.** A question has no customer field; its customer is parsed out of
-  its own text (`parseCustomerFromText()`). Merging "Acme Ltd" into "Acme"
-  relabels the customers on requests (linked questions come along, since
-  they're linked to the request), and records "Acme Ltd" → "Acme" in settings
-  so a question that still says "Acme Ltd" resolves to "Acme" in the customer
-  chip and Trends counts. The person's own words are never edited. The
-  "may be the same customer · Merge" hint on Group by Customer will show for
-  customers that are separate on purpose; a way to dismiss it was
-  considered and left out until someone actually finds it annoying.
+  Its "Merge" link (opens the dialog below with the similar customers ticked)
+  and each header's "Edit" link sit on the right of the header.
+- **Rename and merge are one dialog ("Edit customer"), and merges use a small
+  alias list, not rewritten question text.** A question has no customer
+  field; its customer is parsed out of its own text (`parseCustomerFromText()`).
+  Merging "Acme Ltd" into "Acme" relabels the customers on requests (a request
+  that had both keeps one "Acme", counted once) and records "Acme Ltd" →
+  "Acme" in `settings.json` (`customerAliases`, keyed by the lowercased old
+  name). A question that still says "Acme Ltd" then resolves to "Acme" in the
+  ask box, the customer chip and Trends counts. The person's own words are
+  never edited. A plain rename records the old name the same way, so it
+  follows the person's questions too. Aliases never chain: each new merge or
+  rename repoints older aliases at the final name, and renaming back drops the
+  alias for the reinstated name.
+- **One resolver (`resolveCustomer()`) decides which spelling a typed or parsed
+  customer name becomes:** a name already on some request (ignoring case and
+  spacing) first, then the alias target, then the name as typed. The chip
+  input, the ask box, question parsing and "Count this ask" all go through it,
+  so they can't drift apart. A name that is in use always beats an alias, and
+  the dropdown's "Add as new customer" row still lets someone deliberately
+  bring back a merged-away name as its own customer. `knownCustomers()` now
+  lists one spelling per customer (the most-used one), and
+  `parseCustomerFromText()` tries longer names first so "Acme Financial" isn't
+  read as "Acme".
+- **Renaming onto a name that already exists is blocked, with a Merge button
+  instead.** Silently combining two customers on a rename would be easy to do
+  by accident. Case-only renames ("acme" → "Acme") are allowed. The dialog
+  shows what will happen before saving (new request count, and how many
+  requests already had both names). The similar-customer rows use the same
+  `customerSimilarity()` rule as the hint; other customers can be added by
+  search, since "Acme", "Acme Financial" and "Acme Loans" can be separate
+  customers on purpose. There is still no "Not the same" dismissal for the
+  hint; it was considered and left out until someone finds the hint annoying.
+  Merging or renaming doesn't change a request's `updatedAt`.
 
 ## Security
 

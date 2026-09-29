@@ -226,6 +226,11 @@
   .req-group-head .g-name { font-size: 17px; font-weight: 600; }
   .req-group-head .g-meta { font-size: 13px; }
   .req-group-head .g-hint { margin-left: auto; font-size: 13px; background: var(--ochre-soft); color: var(--ochre-text-1); border-radius: 5px; padding: 3px 9px; }
+  .req-group-head .g-actions { margin-left: auto; display: flex; align-items: baseline; gap: 12px; }
+  .req-group-head .g-actions .g-hint { margin-left: 0; }
+  .g-link { font-family: var(--font-body); background: none; border: none; padding: 0; font-size: 13px; color: var(--ink-soft); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+  .g-link:hover { color: var(--ink); }
+  .g-hint .g-link { color: var(--ochre-text-1); font-weight: 600; margin-left: 6px; }
   .req-group-head.no-customer { border-bottom: 1.5px dashed var(--rule-strong); }
   .req-note { font-size: 13px; color: var(--ink-faint); background: var(--paper-raised); border-top: 1px solid var(--rule); padding: 14px 40px; }
   .req-row { display: grid; grid-template-columns: 320px minmax(0,1fr) 120px; gap: 24px; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--rule); cursor: pointer; }
@@ -327,6 +332,20 @@
   .ci-chip .ci-x { cursor: pointer; color: var(--ink-faint); font-size: 12px; padding: 0 3px; line-height: 1; }
   .ci-chip .ci-x:hover { color: var(--rust); }
   .ci-field input.ci-input[type=text] { flex: 1; width: auto; min-width: 120px; border: none; border-radius: 0; outline: none; background: transparent; font-family: var(--font-body); font-size: 14px; color: var(--ink); padding: 3px 2px; }
+  #custModal .cm-help { font-size: 12.5px; color: var(--ink-faint); margin-top: 5px; }
+  #custModal .cm-error { font-size: 13px; color: var(--rust); background: var(--rust-soft); border-radius: 6px; padding: 8px 10px; margin-top: 8px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  #custModal .cm-error button { font-family: var(--font-body); font-size: 12.5px; font-weight: 600; background: none; border: 1px solid var(--rust); color: var(--rust); border-radius: 5px; padding: 3px 9px; cursor: pointer; white-space: nowrap; }
+  #custModal .cm-section { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.06em; color: var(--ochre); margin: 18px 0 6px; }
+  #custModal .cm-row { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border: 1px solid var(--rule); border-radius: 7px; margin-bottom: 6px; cursor: pointer; font-size: 14.5px; background: var(--paper-raised); }
+  #custModal .cm-row.on { border-color: var(--teal); background: var(--teal-soft); }
+  #custModal .cm-row input { margin: 0; accent-color: var(--teal); }
+  #custModal .cm-row .cm-count { margin-left: auto; font-size: 13px; color: var(--ink-soft); white-space: nowrap; }
+  #custModal .cm-none { font-size: 13px; color: var(--ink-faint); margin-bottom: 6px; }
+  #custModal .cm-search { margin-top: 8px; width: 100%; font-family: var(--font-body); font-size: 13.5px; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--rule-strong); background: var(--paper-raised); color: var(--ink); }
+  #custModal .cm-results { margin-top: 6px; }
+  #custModal .cm-result { padding: 8px 10px; border-radius: 6px; font-size: 14px; cursor: pointer; display: flex; justify-content: space-between; gap: 10px; }
+  #custModal .cm-result:hover { background: var(--paper-raised); }
+  #custModal .cm-preview { margin-top: 16px; background: var(--teal-soft); border: 1px solid var(--teal-strip-border); color: var(--teal); border-radius: 7px; padding: 10px 12px; font-size: 13.5px; line-height: 1.5; }
   .cust-dropdown { position: fixed; z-index: 70; background: var(--paper-raised); border: 1px solid var(--rule-strong); border-radius: 8px; box-shadow: 0 12px 32px var(--shadow-modal); padding: 6px; overflow-y: auto; }
   .cust-dropdown .cd-label { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.06em; color: var(--ochre); padding: 6px 10px 4px; }
   .cust-dropdown .cd-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px; border-radius: 6px; font-size: 15px; cursor: pointer; }
@@ -417,6 +436,8 @@
   </div>
 </div>
 
+<div class="overlay" id="custOverlay"><div class="modal" id="custModal"></div></div>
+
 <div class="overlay" id="detailOverlay"><div class="modal" id="detailModal"></div></div>
 
 <script>
@@ -439,6 +460,7 @@
       requestsControls: (settings && settings.requestsControls) || defaultRequestsControls(),
       scoreWeights: (settings && settings.scoreWeights) || defaultScoreWeights(),
       theme: (settings && settings.theme) || "system",
+      customerAliases: (settings && settings.customerAliases) || {},
       activeScreen: "now",
       currentAnswer: null,
       feed: [],
@@ -447,7 +469,7 @@
   function saveState(){
     window.questionAPI.syncAll({
       requests: state.requests, questions: state.questions,
-      settings: { views: state.views, requestsControls: state.requestsControls, scoreWeights: state.scoreWeights, theme: state.theme },
+      settings: { views: state.views, requestsControls: state.requestsControls, scoreWeights: state.scoreWeights, theme: state.theme, customerAliases: state.customerAliases },
     }).catch(err => console.error("Failed to save:", err));
   }
 
@@ -545,6 +567,7 @@
       views: defaultViews(),
       requestsControls: defaultRequestsControls(),
       scoreWeights: defaultScoreWeights(),
+      customerAliases: {},
       activeScreen: "now", currentAnswer: null, feed: []
     };
   }
@@ -555,6 +578,7 @@
       views: defaultViews(),
       requestsControls: defaultRequestsControls(),
       scoreWeights: defaultScoreWeights(),
+      customerAliases: {},
       activeScreen: "now", currentAnswer: null, feed: []
     };
   }
@@ -599,6 +623,7 @@
     if (s.currentAnswer === undefined) s.currentAnswer = null;
     if (!s.feed) s.feed = [];
     if (!s.theme) s.theme = "system";
+    if (!s.customerAliases || typeof s.customerAliases !== "object") s.customerAliases = {};
     return s;
   }
 
@@ -646,11 +671,14 @@
   // customer vocabulary — never free-text — same spirit as matchEntities()).
   function parseCustomerFromText(text){
     const explicit = extractCustomers(text);
-    if (explicit.length) return explicit[0];
-    const customers = knownCustomers();
-    for (const c of customers){
-      const re = new RegExp("\\b" + c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b", "i");
-      if (re.test(text)) return c;
+    if (explicit.length) return resolveCustomer(explicit[0]);
+    // Longest name first, so "Acme Financial" wins over "Acme" when both are in the text.
+    const names = knownCustomers().map(c => ({ name: c, canon: c }))
+      .concat(Object.keys(state.customerAliases).map(k => ({ name: k, canon: resolveCustomer(k) })))
+      .sort((a, b) => b.name.length - a.name.length);
+    for (const { name, canon } of names){
+      const re = new RegExp("\\b" + name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b", "i");
+      if (re.test(text)) return canon;
     }
     return null;
   }
@@ -678,10 +706,34 @@
   function isRequestIntent(text){ return /^raise (a )?(new )?feature request|^new feature request|^feature request[:]/i.test(text.trim()); }
 
   // ---------------- Entity lookup (customer / topic / quarter) ----------------
+  // Distinct customers, one spelling each (names that differ only in case or
+  // spacing are one customer; the most-used spelling is shown).
   function knownCustomers(){
-    const set = new Set();
-    state.requests.forEach(r => r.customers.forEach(c => set.add(c)));
-    return Array.from(set);
+    const best = new Map();
+    customerCounts().forEach((count, name) => {
+      const k = normCustomer(name), cur = best.get(k);
+      if (!cur || count > cur.count || (count === cur.count && name.localeCompare(cur.name) < 0)) best.set(k, { name, count });
+    });
+    return Array.from(best.values()).map(x => x.name);
+  }
+  // The one spelling to use for a customer name typed or found anywhere:
+  // 1. a name already on some request (ignoring case), else
+  // 2. the name it was merged/renamed into (customerAliases), else
+  // 3. the name as given. Deliberately adding "Acme Ltd" as its own customer
+  //    (the dropdown's "Add as new" row) still works: once it's on a request,
+  //    rule 1 keeps it separate.
+  function resolveCustomer(name){
+    const n = (name || "").replace(/\s+/g, " ").trim();
+    if (!n) return n;
+    const k = normCustomer(n);
+    const hit = knownCustomers().find(c => normCustomer(c) === k);
+    if (hit) return hit;
+    const target = state.customerAliases[k];
+    if (target){
+      const t = knownCustomers().find(c => normCustomer(c) === normCustomer(target));
+      return t || target;
+    }
+    return n;
   }
   function knownTags(){
     const map = new Map();
@@ -698,6 +750,11 @@
     const customers = knownCustomers();
     const tags = knownTags();
     let cMatches = customers.filter(c => c.toLowerCase() === q);
+    // A name that was merged away ("Acme Ltd" -> "Acme") finds the customer it became.
+    if (cMatches.length === 0 && state.customerAliases[normCustomer(q)]){
+      const canon = resolveCustomer(q);
+      cMatches = customers.filter(c => normCustomer(c) === normCustomer(canon));
+    }
     let tMatches = tags.filter(t => t.value.toLowerCase() === q);
     if (cMatches.length === 0 && tMatches.length === 0 && q.length >= 3){
       cMatches = customers.filter(c => c.toLowerCase().includes(q));
@@ -752,7 +809,7 @@
   // What the dropdown shows for the text typed so far. `chosen` are the names
   // already on this request (left out of the suggestions).
   // kind: "exact" | "partial" | "near" | "new" | "already" | "none"
-  function customerSuggestions(typed, counts, chosen){
+  function customerSuggestions(typed, counts, chosen, aliases){
     const t = normCustomer(typed);
     if (!t) return { kind: "none", rows: [], canAdd: false };
     const taken = new Set(chosen.map(normCustomer));
@@ -764,6 +821,10 @@
     // 1. Same name ignoring case/spacing: no "add" row, Enter uses the existing spelling.
     const exact = all.filter(c => normCustomer(c.name) === t);
     if (exact.length) return { kind: "exact", rows: exact.concat(partial.filter(c => !exact.includes(c))), canAdd: false };
+    // 1b. A name that was merged/renamed away ("Acme Ltd" -> "Acme") offers the customer it became.
+    const target = aliases && aliases[t] ? normCustomer(aliases[t]) : null;
+    const viaAlias = target ? all.filter(c => normCustomer(c.name) === target) : [];
+    if (viaAlias.length) return { kind: "exact", rows: viaAlias, canAdd: true };
     // 2. Part of an existing name.
     if (partial.length) return { kind: "partial", rows: partial, canAdd: true };
     // 3. Likely typo or variant: same once suffix/punctuation is stripped, or a
@@ -859,17 +920,17 @@
       if (changed) notify(viaBlur);
     }
     // Typed text taken literally (comma / blur / save): the existing spelling if
-    // the name matches one ignoring case, otherwise a new customer.
+    // the name matches one ignoring case, or the name it was merged into,
+    // otherwise a new customer.
     function literalName(text){
-      const t = normCustomer(text);
-      const hit = Array.from(customerCounts().entries()).filter(([n]) => normCustomer(n) === t).sort((a, b) => b[1] - a[1])[0];
-      return hit ? { name: hit[0], isNew: false } : { name: text.trim(), isNew: true };
+      const name = resolveCustomer(text);
+      return { name, isNew: !knownLower().has(normCustomer(name)) };
     }
 
     function refresh(){
       if (!mount.isConnected){ hideCustDropdown(); return; }
       const typed = input.value.trim();
-      sugg = customerSuggestions(typed, customerCounts(), values());
+      sugg = customerSuggestions(typed, customerCounts(), values(), state.customerAliases);
       items = sugg.rows.map(r => ({ type: "existing", name: r.name }));
       if (sugg.canAdd) items.push({ type: "add", name: typed });
       hl = sugg.kind === "already" ? -1 : (items.length ? 0 : -1);
@@ -961,6 +1022,130 @@
       setValues: list => { chips = []; input.value = ""; addNames((list || []).map(literalName)); if (!list || !list.length) paintChips(); },
     };
   }
+
+  // ---------------- Edit / merge customer ----------------
+  // Renames a customer on every request that has it and can fold other
+  // customers into it in the same step. Question text is never edited: each
+  // old spelling is recorded in state.customerAliases so a question that says
+  // "Acme Ltd" still resolves to "Acme". See docs/DESIGN.md, "Customers".
+  function applyCustomerEdit(editing, newName, mergeNames){
+    const olds = [editing].concat(mergeNames || []);
+    const oldKeys = new Set(olds.map(normCustomer));
+    const nk = normCustomer(newName);
+    state.requests.forEach(r => {
+      if (!r.customers.some(c => oldKeys.has(normCustomer(c)))) return;
+      const out = []; let placed = false;
+      r.customers.forEach(c => {
+        if (!oldKeys.has(normCustomer(c))) out.push(c);
+        else if (!placed){ out.push(newName); placed = true; } // a request that had both counts once
+      });
+      r.customers = out;
+    });
+    const al = state.customerAliases;
+    Object.keys(al).forEach(k => { if (oldKeys.has(normCustomer(al[k]))) al[k] = newName; }); // no chains
+    olds.forEach(o => { if (normCustomer(o) !== nk) al[normCustomer(o)] = newName; });
+    delete al[nk];
+    Object.keys(al).forEach(k => { if (k === normCustomer(al[k])) delete al[k]; });
+  }
+  // Customers that look like `name` (same name bar suffix/punctuation, or a typo).
+  function similarCustomers(name){
+    const counts = customerCounts();
+    return Array.from(counts.keys()).filter(c => c !== name && customerSimilarity(name, c) !== null)
+      .sort((a, b) => counts.get(b) - counts.get(a) || a.localeCompare(b));
+  }
+  function openCustomerDialog(name, preTick){
+    const modal = document.getElementById("custModal");
+    const counts = customerCounts();
+    const total = counts.get(name) || 0;
+    const similar = similarCustomers(name);
+    const extras = [];                                   // other customers added via search
+    const ticked = new Set((preTick || []).filter(n => counts.has(n) && n !== name));
+    (preTick || []).forEach(n => { if (ticked.has(n) && !similar.includes(n)) extras.push(n); });
+    modal.innerHTML = `
+      <button class="close-x" data-close="custOverlay">&#10005;</button>
+      <h2>Edit customer</h2>
+      <div class="modal-sub">Rename it, or fold customers that are really the same one into it.</div>
+      <div class="field" style="margin-bottom:0;"><label for="cmName">Name</label><input type="text" id="cmName" value="${escapeHtml(name)}" autocomplete="off" spellcheck="false" />
+        <div class="cm-help">Renaming updates all ${total} request${total===1?"":"s"} and their linked questions.</div>
+        <div id="cmError"></div></div>
+      <div id="cmMerge"></div>
+      <div id="cmPreview"></div>
+      <div class="modal-actions"><button class="btn-secondary" id="cmCancel">Cancel</button><button class="btn-primary" id="cmSave">Save</button></div>`;
+    const nameEl = modal.querySelector("#cmName");
+    const key = s => normCustomer(s);
+
+    function rowsHtml(list, note){
+      return list.map(c => `<label class="cm-row ${ticked.has(c)?"on":""}"><input type="checkbox" data-cm="${escapeHtml(c)}" ${ticked.has(c)?"checked":""} /><span>${escapeHtml(c)}</span><span class="cm-count">${counts.get(c)} request${counts.get(c)===1?"":"s"}${note?" · "+note:""}</span></label>`).join("");
+    }
+    function paintMerge(){
+      const box = modal.querySelector("#cmMerge");
+      box.innerHTML = `<div class="cm-section">${similar.length || extras.length ? "MERGE OTHER CUSTOMERS INTO THIS ONE" : "MERGE"}</div>
+        ${similar.length ? rowsHtml(similar, "similar") : `<div class="cm-none">No similar customers found.</div>`}
+        ${extras.length ? rowsHtml(extras, "") : ""}
+        <input type="text" class="cm-search" id="cmSearch" placeholder="Search other customers…" autocomplete="off" />
+        <div class="cm-results" id="cmResults"></div>`;
+      box.querySelectorAll("[data-cm]").forEach(cb => cb.onchange = () => {
+        const n = cb.getAttribute("data-cm");
+        if (cb.checked) ticked.add(n); else ticked.delete(n);
+        paintMerge(); update();
+      });
+      const search = box.querySelector("#cmSearch"), results = box.querySelector("#cmResults");
+      search.oninput = () => {
+        const t = key(search.value);
+        const pool = Array.from(counts.keys()).filter(c => c !== name && !similar.includes(c) && !extras.includes(c) && t && key(c).includes(t))
+          .sort((a, b) => counts.get(b) - counts.get(a) || a.localeCompare(b)).slice(0, 6);
+        results.innerHTML = pool.length ? pool.map(c => `<div class="cm-result" data-add="${escapeHtml(c)}"><span>${escapeHtml(c)}</span><span class="mono-meta">${counts.get(c)} request${counts.get(c)===1?"":"s"}</span></div>`).join("")
+          : (t ? `<div class="cm-none">No other customer matches “${escapeHtml(search.value.trim())}”.</div>` : "");
+        results.querySelectorAll("[data-add]").forEach(el => el.onclick = () => {
+          const n = el.getAttribute("data-add"); extras.push(n); ticked.add(n); paintMerge(); update();
+        });
+      };
+    }
+    function update(){
+      const newName = nameEl.value.replace(/\s+/g, " ").trim();
+      const merged = Array.from(ticked);
+      const set = new Set([name].concat(merged).map(key));
+      // Renaming onto a customer that already exists (and isn't being merged) is blocked.
+      const clash = newName ? Array.from(counts.keys()).find(c => c !== name && key(c) === key(newName) && !ticked.has(c)) : null;
+      const err = modal.querySelector("#cmError");
+      err.innerHTML = clash ? `<div class="cm-error"><span>“${escapeHtml(clash)}” already exists (${counts.get(clash)} request${counts.get(clash)===1?"":"s"}). Merge it into this customer instead?</span><button type="button" data-cm-merge="${escapeHtml(clash)}">Merge</button></div>` : "";
+      const mb = err.querySelector("[data-cm-merge]");
+      if (mb) mb.onclick = () => { const n = mb.getAttribute("data-cm-merge"); nameEl.value = n; if (!similar.includes(n) && !extras.includes(n)) extras.push(n); ticked.add(n); paintMerge(); update(); };
+      const union = state.requests.filter(r => r.customers.some(c => set.has(key(c)))).length;
+      const sum = [name].concat(merged).reduce((n, c) => n + (counts.get(c) || 0), 0);
+      const both = sum - union;
+      const preview = modal.querySelector("#cmPreview");
+      const renamed = newName && newName !== name;
+      if (!newName || clash || (!renamed && !merged.length)) preview.innerHTML = "";
+      else preview.innerHTML = `<div class="cm-preview">${renamed ? `<b>${escapeHtml(name)}</b> → <b>${escapeHtml(newName)}</b>. ` : ""}${merged.length ? `<b>${escapeHtml(newName)}</b> will have <b>${union}</b> request${union===1?"":"s"}` + ` (${merged.map(escapeHtml).join(", ")} folded in${both > 0 ? `; ${both} request${both===1?" that had":"s that had"} both count${both===1?"s":""} once` : ""}).` : `${union} request${union===1?"":"s"} updated.`} Questions keep their wording.</div>`;
+      const save = modal.querySelector("#cmSave");
+      save.textContent = merged.length ? `Save and merge ${merged.length}` : "Save";
+      save.disabled = !newName || !!clash;
+      save.style.opacity = save.disabled ? "0.5" : "";
+    }
+    function doSave(){
+      const newName = nameEl.value.replace(/\s+/g, " ").trim();
+      const merged = Array.from(ticked);
+      if (!newName) return;
+      const clash = Array.from(counts.keys()).find(c => c !== name && key(c) === key(newName) && !ticked.has(c));
+      if (clash) return;
+      if (newName !== name || merged.length){ applyCustomerEdit(name, newName, merged); saveState(); }
+      closeOverlay("custOverlay");
+      render();
+    }
+    const close = () => { closeOverlay("custOverlay"); };
+    modal.querySelector("[data-close]").onclick = close;
+    modal.querySelector("#cmCancel").onclick = close;
+    modal.querySelector("#cmSave").onclick = doSave;
+    nameEl.addEventListener("input", update);
+    modal.onkeydown = e => {
+      if (e.key === "Escape"){ e.preventDefault(); close(); }
+      else if (e.key === "Enter" && e.target === nameEl){ e.preventDefault(); doSave(); }
+    };
+    paintMerge(); update();
+    openOverlay("custOverlay");
+    nameEl.focus(); nameEl.select();
+  }
   function parseQuarterSort(q){
     const m = /^Q([1-4])\s+(\d{4})$/.exec(q || "");
     return m ? (parseInt(m[2],10)*10 + parseInt(m[1],10)) : -1;
@@ -1018,7 +1203,7 @@
     html += `<option value="__new__">+ Add new</option>`;
     return html;
   }
-  function requestsForCustomer(name){ return state.requests.filter(r => r.customers.some(c => c.toLowerCase() === name.toLowerCase())); }
+  function requestsForCustomer(name){ const k = normCustomer(resolveCustomer(name)); return state.requests.filter(r => r.customers.some(c => normCustomer(c) === k)); }
   function requestsForTag(type, value){ return state.requests.filter(r => (r[type]||"").toLowerCase() === value.toLowerCase()); }
   function reqLinks(list){ return list.map(r => `<span class="src" data-go-req="${r.id}">${escapeHtml(r.title)}</span>`).join(", "); }
 
@@ -1629,13 +1814,14 @@
       const count = byCustomer ? `${g.items.length} request${g.items.length===1?"":"s"}` : g.items.length;
       const similar = byCustomer && g.key !== null ? (dupHints.get(g.key) || []) : [];
       const hint = similar.length
-        ? `<div class="g-hint">"${escapeHtml(similar[0])}"${similar.length > 1 ? ` and ${similar.length - 1} more` : ""} may be the same customer</div>` : "";
+        ? `<div class="g-hint">"${escapeHtml(similar[0])}"${similar.length > 1 ? ` and ${similar.length - 1} more` : ""} may be the same customer <button class="g-link" data-merge-customer="${escapeHtml(g.key)}">Merge</button></div>` : "";
+      const actions = g.key !== null ? `<div class="g-actions">${hint}<button class="g-link" data-edit-customer="${escapeHtml(g.key)}">Edit</button></div>` : "";
       return `<div>
         <div class="req-group-head${g.noCustomer ? " no-customer" : ""}">
           <div class="g-name">${escapeHtml(groupLabel(rc.group, g.key))}</div>
           <div class="mono-meta">${count}</div>
           ${meta.text ? `<div class="g-meta" style="color:${meta.color};">${meta.text}</div>` : ""}
-          ${hint}
+          ${actions}
         </div>
         ${g.items.map(r => renderRequestRow(r, rc.layout, maxTotal, byCustomer ? { customer: g.key } : null)).join("")}
       </div>`;
@@ -2233,6 +2419,12 @@
     };
 
     // Requests screen controls
+    mainEl.querySelectorAll("[data-edit-customer]").forEach(b => { b.onclick = e => { e.stopPropagation(); openCustomerDialog(b.getAttribute("data-edit-customer")); }; });
+    mainEl.querySelectorAll("[data-merge-customer]").forEach(b => { b.onclick = e => {
+      e.stopPropagation();
+      const n = b.getAttribute("data-merge-customer");
+      openCustomerDialog(n, customerDuplicateHints().get(n) || []);
+    }; });
     mainEl.querySelectorAll('[data-seg="group"] button').forEach(b => { b.onclick = () => { state.requestsControls.group = b.getAttribute("data-val"); saveState(); render(); }; });
     mainEl.querySelectorAll('[data-seg="layout"] button').forEach(b => { b.onclick = () => { state.requestsControls.layout = b.getAttribute("data-val"); saveState(); render(); }; });
     const shipSel = mainEl.querySelector("#shippedFilterSelect");

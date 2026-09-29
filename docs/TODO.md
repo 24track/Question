@@ -57,3 +57,13 @@ Known gaps and things we want to revisit — not urgent, not forgotten.
   - **Trends callout:** the "shipped but people are still asking… probably
     hard to find, not missing" wording is product-specific. Keep it as is,
     even where it reads oddly after a rename?
+
+- **Answer-card customer picker (maybe later)** — on the ask-box answer card
+  for a matched request, the customer tag is display-only. It shows the
+  customer parsed from the question text, resolved through the alias list,
+  and "Count this ask" adds that name. Making the tag a chip input, like the
+  one in the request modal, would let someone pick or correct the customer
+  before counting the ask, and would show "NEW" for a name nobody has used.
+  Left out of the customer-name work on purpose: parsing plus the shared
+  resolver already keeps the spelling consistent, and the picker adds UI to
+  the most-used screen. Revisit if people count asks under the wrong customer.
