@@ -767,18 +767,31 @@
   function scoreOf(r){ return computeScoreParts(r).total; }
 
   function ageLabel(ts){ const d = Math.floor((Date.now()-ts)/86400000); return d === 0 ? "today" : d+"d ago"; }
-  function daysUntil(ts){ return (ts - Date.now())/86400000; }
+  // Due dates are calendar dates, not moments: compare local calendar days so a
+  // request due today reads "due today" all day, and is only overdue from the
+  // next day. Math.round absorbs the 23/25-hour days around DST changes.
+  function startOfDay(ts){ const d = new Date(ts); return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+  function daysUntil(ts){ return Math.round((startOfDay(ts) - startOfDay(Date.now())) / 86400000); }
   function dueLabel(ts){
     if (!ts) return null;
     const d = daysUntil(ts);
-    return d <= 0 ? Math.round(-d)+"d overdue" : "due in "+Math.round(d)+"d";
+    return d === 0 ? "due today" : d < 0 ? (-d)+"d overdue" : "due in "+d+"d";
   }
   function dueShort(ts){
     if (!ts) return "no due date";
-    const d = daysUntil(ts);
-    return d <= 0 ? Math.round(-d)+"d overdue" : "due in "+Math.round(d)+"d";
+    return dueLabel(ts);
   }
-  function isDueSoon(r){ return r.dueDate && daysUntil(r.dueDate) <= 3; }
+  // Local YYYY-MM-DD for the date picker (toISOString would use UTC and can
+  // show the previous day in timezones ahead of UTC).
+  function dateInputValue(ts){
+    const d = new Date(ts);
+    return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+  }
+  function dueDateText(ts){ return new Date(ts).toLocaleDateString(undefined,{month:"short",day:"numeric"}); }
+  // Shipped requests are finished, so they show just the date: never
+  // "overdue" and never red. (The score itself is unchanged; see docs/DESIGN.md.)
+  function dueLabelFor(r){ return isShipped(r) ? dueDateText(r.dueDate) : dueLabel(r.dueDate); }
+  function isDueSoon(r){ return !!r.dueDate && !isShipped(r) && daysUntil(r.dueDate) <= 3; }
 
   // ---------------- Clustering of unmatched questions (unchanged logic) ----------------
   function clusterUnmatchedQuestions(){
@@ -1125,7 +1138,7 @@
         body = `<h2 class="answer-headline">Yes, this is already tracked.</h2>
           <div class="answer-card">
             <div class="answer-card-body">
-              <div class="row-between"><div class="title">${escapeHtml(r.title)}</div><div class="mono-meta" style="font-family:var(--font-body);font-size:13.5px;font-weight:500;color:${isShipped(r) ? 'var(--ink-soft)' : 'var(--ochre)'};">${isShipped(r) ? "Shipped" : statusLabel(r.status)}${r.dueDate ? " · " + dueLabel(r.dueDate) : ""}</div></div>
+              <div class="row-between"><div class="title">${escapeHtml(r.title)}</div><div class="mono-meta" style="font-family:var(--font-body);font-size:13.5px;font-weight:500;color:${isShipped(r) ? 'var(--ink-soft)' : 'var(--ochre)'};">${isShipped(r) ? "Shipped" : statusLabel(r.status)}${r.dueDate ? " · " + dueLabelFor(r) : ""}</div></div>
               <div class="desc">${escapeHtml(r.description)}</div>
               <div class="mono-meta">${matchedWords.length ? `matched on ${matchedWords.map(w=>'"'+escapeHtml(w)+'"').join(", ")} · ` : ""}already asked by ${escapeHtml(r.customers.join(", ")) || "no one yet"}</div>
             </div>
@@ -1235,7 +1248,7 @@
       { name: "urgency", label: p.urgencyPart > 0 ? `${r.urgency.charAt(0).toUpperCase()+r.urgency.slice(1)} urgency` : "No urgency", val: p.urgencyPart, color: SCORE_PART_COLORS[0] },
       { name: "customers", label: `${r.customers.length} customer${r.customers.length===1?"":"s"}`, val: p.customerPart, color: SCORE_PART_COLORS[1] },
       { name: "questions", label: `${r.questionCount} question${r.questionCount===1?"":"s"}`, val: p.questionPart, color: SCORE_PART_COLORS[2] },
-      { name: "due", label: r.dueDate ? dueLabel(r.dueDate).replace(/^./, c=>c.toUpperCase()) : "No due date", val: p.duePart, color: SCORE_PART_COLORS[3] },
+      { name: "due", label: r.dueDate ? (isShipped(r) ? "Due " + dueDateText(r.dueDate) : dueLabel(r.dueDate).replace(/^./, c=>c.toUpperCase())) : "No due date", val: p.duePart, color: SCORE_PART_COLORS[3] },
       { name: "age", label: `${Math.floor((Date.now()-r.createdAt)/86400000)} days old`, val: p.agePart, color: SCORE_PART_COLORS[4] },
     ];
   }
@@ -1336,8 +1349,8 @@
     return toolbar + legend + body;
   }
   function renderRequestRow(r, layout, maxTotal){
-    const dueTxt = r.dueDate ? dueLabel(r.dueDate) : "no due date";
-    const dueSoon = isDueSoon(r) || (r.dueDate && daysUntil(r.dueDate) < 0);
+    const dueTxt = r.dueDate ? dueLabelFor(r) : "no due date";
+    const dueSoon = isDueSoon(r);
     const custStr = r.customers.length > 2 ? `${r.customers.slice(0,2).join(", ")} +${r.customers.length-2}` : r.customers.join(", ");
     let midCol;
     if (layout === "ledger"){
@@ -1501,9 +1514,9 @@
           <input type="text" id="newQuarterInput" class="add-new-inline" placeholder="e.g. Q1 2028" />
           <div class="prop-row">
             <div class="p-label">Due</div>
-            <div class="p-value" style="color:${r.dueDate && daysUntil(r.dueDate)<=3 ? 'var(--rust)':'var(--ink)'};">${r.dueDate ? new Date(r.dueDate).toLocaleDateString(undefined,{month:"short",day:"numeric"}) + " · " + dueLabel(r.dueDate) : "None"}</div>
+            <div class="p-value" style="color:${isDueSoon(r) ? 'var(--rust)':'var(--ink)'};">${r.dueDate ? dueDateText(r.dueDate) + (isShipped(r) ? "" : " · " + dueLabel(r.dueDate)) : "None"}</div>
           </div>
-          <div style="padding:0 0 12px;"><input type="date" id="editDueDate" value="${r.dueDate ? new Date(r.dueDate).toISOString().slice(0,10) : ""}" style="width:100%;font-family:var(--font-body);font-size:13px;padding:6px 8px;border-radius:6px;border:1px solid var(--rule-strong);background:var(--paper);color:var(--ink);" /></div>
+          <div style="padding:0 0 12px;"><input type="date" id="editDueDate" value="${r.dueDate ? dateInputValue(r.dueDate) : ""}" style="width:100%;font-family:var(--font-body);font-size:13px;padding:6px 8px;border-radius:6px;border:1px solid var(--rule-strong);background:var(--paper);color:var(--ink);" /></div>
           <div class="prop-row">
             <div class="p-label">Topic ${customTopics().length ? `<span class="src" id="manageTopicsLink" style="font-size:11px;">(manage)</span>` : ""}</div>
             <div class="p-value">${escapeHtml(r.topic ? r.topic.charAt(0).toUpperCase()+r.topic.slice(1) : "None")} ▾</div>
