@@ -1,7 +1,7 @@
 // Proves the backend + SQLite index work end-to-end: seeds a temp data
 // directory with a handful of requests/questions through the same syncAll()
 // path the Electron app uses, then runs the kinds of structured queries the
-// app's Today/Trends views need — as real SQL against the index, not
+// app's Now/Trends views need — as real SQL against the index, not
 // re-implemented in JS. Run with: node src/demo.cjs
 "use strict";
 

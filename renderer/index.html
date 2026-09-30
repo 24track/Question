@@ -158,6 +158,10 @@
   .first-ask-body { padding: 20px 22px; display: flex; flex-direction: column; gap: 14px; }
   .first-ask-body p { margin: 0; font-size: 15.5px; line-height: 1.55; color: var(--body-copy); }
   .not-what-meant { font-size: 14px; color: var(--ink-soft); }
+  .whatnow-title { font-size: 30px; line-height: 1.15; font-weight: 600; letter-spacing: -0.02em; margin: 0; }
+  .whatnow-reason { font-size: 16px; line-height: 1.5; color: var(--body-copy); }
+  .whatnow-reason b { color: var(--ink); }
+  .whatnow-reason .due-soon { color: var(--rust); font-weight: 600; }
   .not-what-meant a, .src { color: var(--teal); cursor: pointer; }
   .not-what-meant a:hover, .src:hover { text-decoration: underline; }
 
@@ -719,6 +723,11 @@
     return (best && bestScore >= 1) ? best : null;
   }
   function isRequestIntent(text){ return /^raise (a )?(new )?feature request|^new feature request|^feature request[:]/i.test(text.trim()); }
+  // The app's own question. Exact match only, no fuzzy matching: trim,
+  // ignore case, and the trailing question mark is optional.
+  function isWhatNowQuestion(text){
+    return text.trim().toLowerCase().replace(/\?$/, "") === "what should i do now";
+  }
 
   // ---------------- Entity lookup (customer / topic / quarter) ----------------
   // Distinct customers, one spelling each (names that differ only in case or
@@ -1269,7 +1278,7 @@
   // ---------------- Clustering of unmatched questions (unchanged logic) ----------------
   function clusterUnmatchedQuestions(){
     const clusters = [];
-    state.questions.filter(q => !q.matchedRequestId).forEach(q => {
+    state.questions.filter(q => !q.matchedRequestId && !q.appOwn).forEach(q => {
       const words = stem(q.text);
       const threshold = words.length === 0 ? Infinity : Math.min(2, words.length);
       const target = clusters.find(c => overlap(new Set(words), c.words) >= threshold);
@@ -1429,6 +1438,19 @@
     const text = rawText.trim();
     if (!text) return;
     document.getElementById("askInput").value = "";
+
+    // The app's own question gets its own reply (see renderWhatNowAnswer). It
+    // is still logged, but flagged appOwn so Trends and theme clustering skip
+    // it and it can't become the most-asked theme.
+    if (isWhatNowQuestion(text)){
+      const q = { id: uid("q"), text, matchedRequestId: null, answer: null, createdAt: Date.now(), appOwn: true };
+      state.questions.push(q);
+      state.currentAnswer = { kind: "whatnow", text, questionId: q.id };
+      pushRecentAsk({ id: uid("f"), text, kind: "whatnow" });
+      state.activeScreen = "answer";
+      saveState(); render();
+      return;
+    }
 
     // Quarter lookup and customer/topic entity lookup both produce a "list"
     // answer — grouped cards, never a fuzzy match (see docs/DESIGN.md).
@@ -1598,6 +1620,7 @@
   function renderAnswerScreen(){
     const a = state.currentAnswer;
     if (a.kind === "list") return renderListAnswer(a);
+    if (a.kind === "whatnow") return renderWhatNowAnswer();
 
     const recent = state.feed.slice(0, -1).slice(-6).reverse();
     let body = "";
@@ -1664,6 +1687,33 @@
         <div class="label">Earlier today</div>
         ${recent.map(f => `<div class="earlier-row"><div class="q">"${escapeHtml(f.text)}"</div><div class="result${f.requestId?' linked':''}" ${f.requestId?`data-go-req="${f.requestId}"`:""}>${recentAskSummary(f)}</div></div>`).join("")}
       </div>` : ""}
+    </div></div>`;
+  }
+  // The app's own question, "What should I do now?" — answered in place with
+  // the top pick from Now, plus a way through to Now. Computed from live state
+  // on every render, so it never shows a stale pick.
+  function renderWhatNowAnswer(){
+    const open = state.requests.filter(r => !isShipped(r)).sort((x,y) => scoreOf(y) - scoreOf(x));
+    const top = open[0];
+    const then = open.slice(1, 3);
+    const card = top ? `<div class="answer-card">
+        <div class="answer-card-body">
+          <div class="eyebrow" style="color:var(--teal);">Your top pick</div>
+          <h3 class="whatnow-title">${escapeHtml(top.title)}</h3>
+          <div class="whatnow-reason">${reasonSentence(top)}</div>
+        </div>
+        <div class="answer-strip teal">
+          <div class="strip-text">${then.length ? `Then: ${then.map(r => escapeHtml(r.title)).join(", ")}` : ""}</div>
+          <button class="btn-teal" data-nav-go="now">Open in Now →</button>
+        </div>
+      </div>` : `<div class="answer-card"><div class="answer-card-body"><div class="desc">Nothing's open right now.</div></div></div>`;
+    return `<div class="answer-screen"><div class="answer-col">
+      <div>
+        <h2 class="answer-headline">That's what Now is for.</h2>
+        <div class="mono-meta" style="margin-top:8px;">the app's own question · not counted in Trends</div>
+      </div>
+      ${card}
+      <div class="not-what-meant">Meant something else? <a data-raise-whatnow="1">Raise it as a request</a> or <a data-rephrase="1">rephrase</a>.</div>
     </div></div>`;
   }
   function recentAskSummary(f){
@@ -1894,7 +1944,7 @@
     return `<div class="trends-screen">
       <div class="trends-header">
         <h1 class="trends-title">Trends</h1>
-        <div class="mono-meta">${state.questions.length} questions · ${state.requests.length} requests · ${knownCustomers().length} customers</div>
+        <div class="mono-meta">${state.questions.filter(q => !q.appOwn).length} questions ·${state.requests.length} requests · ${knownCustomers().length} customers</div>
       </div>
       <div class="trends-grid">
         <div class="trends-col">
@@ -2422,6 +2472,15 @@
       pendingDraftFeedItem = null;
       pendingDraftClusterQuestionIds = a.clusterQuestionIds;
       openDraftFromText("Raise a feature request for: " + a.label);
+    };
+    // "Raise it as a request" on the app's own question: opens the normal
+    // new-request flow with the question prefilled, but deliberately does NOT
+    // link the logged question to the new request. Linking would add it to the
+    // request's question count, which feeds Trends.
+    const raiseWhatNow = mainEl.querySelector("[data-raise-whatnow]");
+    if (raiseWhatNow) raiseWhatNow.onclick = () => {
+      pendingDraftFeedItem = null; pendingDraftClusterQuestionIds = null;
+      openDraftFromText(state.currentAnswer.text);
     };
     const raiseFirst = mainEl.querySelector("[data-raise-first]");
     if (raiseFirst) raiseFirst.onclick = () => {

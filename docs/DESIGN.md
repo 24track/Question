@@ -97,11 +97,11 @@ here whenever a non-obvious choice gets made, or gets questioned and kept.
   sort/group — so the formula stays one honest thing, and whether a
   finished item should even be competing for attention is a per-view
   decision instead.
-- **Today and By urgency default to hiding shipped requests; All requests,
+- **Now and By urgency default to hiding shipped requests; All requests,
   Topic heat and By quarter default to showing everything.** The first two
   are working views — "what do I do next" — where a permanently-done item
   is just clutter (this is the bug that prompted `shippedFilter` to exist
-  at all: a shipped, overdue request was sorting to the top of Today). The
+  at all: a shipped, overdue request was sorting to the top of Now). The
   other three are read as comprehensive or historical on purpose — "Topic
   heat" in particular loses meaning if it can't show that a shipped
   feature is still generating questions, which is itself a signal (probably
@@ -113,7 +113,7 @@ here whenever a non-obvious choice gets made, or gets questioned and kept.
   which views choose to show it.
 - **Migrating an existing install only changes the one view the bug was
   actually in.** Every pre-existing view defaults `shippedFilter` to `"all"`
-  (i.e., exactly what it already showed) except the score-sorted Today view,
+  (i.e., exactly what it already showed) except the score-sorted Now view,
   which defaults to `"hide"` — on the theory that fixing the reported bug
   automatically beats requiring a manual step, but silently changing what a
   *different*, working view already shows out from under an existing user
