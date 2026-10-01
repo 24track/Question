@@ -100,7 +100,7 @@ that turns out to be deliberate.
 
 ## How it's built
 
-![Architecture diagram: renderer process talks to the main process through preload.cjs's two exposed calls (loadAll/syncAll); the main process resolves the data directory and a separate seeded-data marker and hands both to backend.cjs, which reads and writes the Markdown+frontmatter files, settings.json and the disposable SQLite index under Documents/Question Data, plus the tiny marker file kept in Electron's own app-support directory.](docs/architecture.svg)
+![Architecture diagram: renderer process talks to the main process through the calls preload.cjs exposes (loadAll/syncAll for the open desk's data, plus a few desk calls); the main process works out which desk is open, and hands that folder and a separate seeded-data marker to backend.cjs, which reads and writes the Markdown+frontmatter files, settings.json and the disposable SQLite index under Documents/Question/<desk>, plus the tiny marker and last-desk files kept in Electron's own app-support directory.](docs/architecture.svg)
 
 - **Renderer**: a single-file HTML/CSS/JS UI (`renderer/index.html`), no
   framework, no build step.
@@ -117,9 +117,11 @@ that turns out to be deliberate.
 - **Desktop shell**: Electron (`main.cjs` / `preload.cjs`), with
   `contextIsolation` on, `nodeIntegration` off, a sandboxed renderer, and a
   `contentSecurityPolicy` enforced both in the page and in the main
-  process. The renderer only ever gets two calls across the bridge —
-  `loadAll()` and `syncAll(...)` — everything else (parsing frontmatter,
-  writing files, rebuilding the index) stays in the main process.
+  process. The renderer only ever gets a handful of calls across the bridge —
+  `loadAll()` and `syncAll(...)` for the open desk's data, and a few for
+  listing, opening, creating and renaming desks — and never a file path.
+  Everything else (parsing frontmatter, writing files, rebuilding the index,
+  touching desk folders) stays in the main process.
 
 (See "Running it" below for where your data actually lives on disk.)
 
@@ -130,27 +132,44 @@ npm install
 npm start
 ```
 
-The first time you run it, a `Question Data` folder is created inside your
-**Documents** folder — that's where all your data actually lives (plain
-Markdown files, human-readable, nothing hidden away in an app-support
-folder), and it's seeded with a handful of example feature requests and
-questions so there's something to look at right away.
+The first time you run it, the app asks you to name your first **desk**. A
+desk is one separate set of your data: a folder inside `Documents/Question`
+(for example `Documents/Question/Strata`) holding plain Markdown files,
+human-readable, nothing hidden away in an app-support folder. The very first
+desk is seeded with a handful of example feature requests and questions so
+there's something to look at right away; every desk you start after that is
+empty.
 
-That seeding only ever happens once — the true first time the app has ever
+You can keep as many desks as you like (work, personal, a home project) and
+switch between them from the desk name in the top bar, where you can also
+start a new desk or rename the one that's open. Renaming a desk renames its
+folder. Each desk has its own requests, questions, views, score weights and
+theme; the chat history resets whenever you switch, the same as on restart.
+The app remembers which desk you had open and opens it directly next time. If
+that folder has gone (renamed or deleted by hand), or you move or delete a
+desk's folder while the app is running, the app falls back to a "Which desk?"
+screen rather than quietly creating a new folder.
+
+The desk list only shows folders the app itself created, meaning folders that
+have its own `feature-requests` and `questions` subfolders. Anything else you
+keep in `Documents/Question` is ignored. A folder of data from an earlier
+version of the app (the old `Documents/Question Data`) works as a desk too:
+move it into `Documents/Question` and rename it however you like.
+
+The example data only ever seeds once — the true first time the app has ever
 run on your machine. Updating the app's code later (a new download, a
-`git pull`, whatever) never touches `Question Data` — your real data and the
+`git pull`, whatever) never touches your desks — your real data and the
 app's code are entirely separate, so upgrading the app never risks your
 data.
 
-**To wipe everything and start clean, quit the app and delete the
-`Question Data` folder, then relaunch.** There's no in-app button for this
-— an always-visible, one-click, unrecoverable wipe sitting in the main UI
-forever was judged too dangerous to keep (see docs/DESIGN.md), and this
-achieves the same thing more safely: it takes a deliberate action outside
-the app, and on most systems the deleted folder lands in the Trash/Recycle
-Bin first rather than being gone immediately. You'll land on a genuinely
-empty app, not the example data again — the example seed is a true, one-time
-first-run affordance, not something a later reset brings back.
+**To wipe a desk and start clean, quit the app and delete that desk's
+folder, then relaunch** (or just start a new desk). There's no in-app button
+for this — an always-visible, one-click, unrecoverable wipe sitting in the
+main UI forever was judged too dangerous to keep (see docs/DESIGN.md), and
+deleting a folder by hand takes a deliberate action outside the app. On most
+systems the deleted folder lands in the Trash/Recycle Bin first rather than
+being gone immediately. The example data isn't brought back by a later
+reset — it's a true, one-time first-run affordance.
 
 `npm run demo` runs a small end-to-end proof of the backend on its own
 (seeds sample data, deletes the index, rebuilds it from the Markdown files,

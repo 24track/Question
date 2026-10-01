@@ -2,27 +2,14 @@
 
 Known gaps and things we want to revisit — not urgent, not forgotten.
 
-- **Decide how, or if, to support multiple user scenarios** — e.g. separate
-  Work / Personal / Hobbies data that don't mix. Ruled out: separate signed
-  macOS installers per scenario (too much packaging/distribution overhead
-  for one person to maintain). Still open: an in-app workspace/profile
-  switcher (one install, pick which data folder is "active"), vs. something
-  simpler, vs. not bothering. `main.cjs`'s `DATA_DIR` now reads an optional
-  `QUESTION_DATA_DIR` env var override (unset = today's unchanged behavior,
-  fixed `Documents/Question Data`) so this isn't blocked on a bigger
-  refactor later — but nothing in the app exposes or sets it yet.
-  - **Current workaround: swap folders by name.** Users can maintain
-    separate Request databases by prepending topic names to the start of the
-    `Question Data` folder. The app only recognises folders with that exact
-    name; if the folder is renamed (e.g. `Personal Question Data`), the app
-    won't open it.
+_Multiple data sets are done: see "Desks" in docs/DESIGN.md._
 
-    This means you can have multiple `Question Data` folders on your machine
-    and swap between them by removing the prepended topic when you want to
-    open a specific database.
-
-    If there is no `Question Data` folder, the app will create a new, blank,
-    `Question Data` folder on open.
+- **Terminology (later)** — consider renaming "Request" to "Task" and
+  "Customer" to "People". Both terms come from product management and don't
+  fit other uses well, such as daily tasks or home projects, which desks now
+  make easy to set up. Keep the current terms for now and revisit if the app
+  gets wider use. It's a wording change only: behaviour stays the same. (This
+  overlaps with the editable-labels item below.)
 
 - **Editable labels for other use cases (display-only)** — let a user rename
   the priority-score weight labels, "Shipped" (e.g. "Done") and "Requests"

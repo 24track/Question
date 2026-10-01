@@ -37,6 +37,20 @@ function ensureDataDirs(dataDir) {
   fs.mkdirSync(path.join(dataDir, QUESTIONS_DIR), { recursive: true });
 }
 
+// A folder counts as one of the app's own data folders (a "desk" — see
+// src/desks.cjs) when it has the two record folders the app creates. This is
+// how the desk list tells our folders apart from anything else a user keeps
+// next to them, and it needs no marker file: a folder moved in by hand from
+// an older version of the app has the same structure, so it just shows up.
+function isDataFolder(dir) {
+  try {
+    return fs.statSync(path.join(dir, REQUESTS_DIR)).isDirectory()
+      && fs.statSync(path.join(dir, QUESTIONS_DIR)).isDirectory();
+  } catch (e) {
+    return false;
+  }
+}
+
 // ---- "Ever launched" marker ----
 // Deliberately NOT inside dataDir: the whole point is that it survives the
 // user deleting their visible data folder to reset the app (see README /
@@ -278,4 +292,4 @@ function rebuildIndex(dataDir) {
   db.close();
 }
 
-module.exports = { loadAll, syncAll, rebuildIndex, ensureDataDirs };
+module.exports = { loadAll, syncAll, rebuildIndex, ensureDataDirs, isDataFolder };

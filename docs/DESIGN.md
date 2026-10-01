@@ -71,18 +71,53 @@ here whenever a non-obvious choice gets made, or gets questioned and kept.
   the feed transcript itself deliberately doesn't.
 - **Example data only ever seeds on the true first run — ever, on this
   machine — not just "no data currently on disk."** Those aren't the same
-  test: deleting `Question Data` to reset the app (see the "Clear all data"
-  entry below) also deletes `settings.json`, which used to be the only
+  test: deleting a desk's data folder to reset the app (see the "Clear all
+  data" entry below) also deletes `settings.json`, which used to be the only
   first-run signal, so it used to make the app look exactly like a fresh
   install and reseed the examples again. It now also checks a tiny marker
   file, `seeded.marker`, written on first launch — deliberately kept
-  *outside* `Question Data`, in Electron's own per-user app-support
+  *outside* the desk folders, in Electron's own per-user app-support
   directory (see `main.cjs`'s `SEEDED_MARKER`), specifically so it survives
-  the visible data folder being deleted. This is the one deliberate
-  exception to "nothing hidden in app-support" above: unlike everything
+  the visible data folder being deleted. With desks, only the first desk ever
+  opened on a machine gets the examples; later new desks start empty. This is
+  the one deliberate exception to "nothing hidden in app-support" above: unlike everything
   else, this file holds no user content at all, just one bit ("has this
   app ever produced its example data before") — a reset should give you a
   truly blank app, not the demo content again.
+
+- **Desks: one folder per separate set of data, switched by pointing the
+  app at a different folder.** There's no database to migrate and no
+  connection to manage, because the Markdown files are the source of truth and
+  the SQLite index is rebuilt from them on every save (so nothing is held
+  open between saves, and renaming the open desk's folder is safe). The
+  choices that aren't obvious from the code (`src/desks.cjs`, `main.cjs`):
+  - **A desk is recognised by its structure, not a marker file.** A subfolder
+    of `Documents/Question` counts when it has the app's own
+    `feature-requests` and `questions` folders. Anything else the user keeps
+    there is never listed or counted, and a folder moved in by hand from an
+    older version just appears.
+  - **The last-opened desk is remembered in `desks.json`, in Electron's
+    app-support directory** (beside `seeded.marker`), not in a desk folder or
+    in `Documents/Question`, so renaming or deleting a desk by hand never takes
+    the setting with it.
+  - **Switching reloads the page.** Chat history, saved-view state and open
+    dialogs reset exactly as they do on restart; nothing is persisted per desk
+    (chat history is in-memory only, see above).
+  - **A missing folder falls back to the picker; it's never recreated.** The
+    folder is checked before every save and every switch. If the open desk's
+    folder was deleted or renamed by hand, that save is dropped (there's
+    nowhere to put it) and the app shows the picker with a "couldn't find"
+    message. Silently recreating the folder would hide the problem and fork
+    the person's data.
+  - **No delete in the app.** Removing a desk means deleting its folder by
+    hand, the same deliberate friction as the missing "Clear all data" button.
+    Rename only ever applies to the open desk and renames its folder.
+  - **The renderer never sends a path.** It names a desk; the main process
+    resolves it under the parent folder. Names are checked there (empty, the
+    characters Windows forbids, Windows-reserved names, trailing dots,
+    duplicates ignoring case, an existing non-desk folder in the way).
+  - **All the UI wording lives in `DESK_COPY` in `renderer/index.html`,** so
+    the word "desk" is easy to change later.
 
 ## Views & scoring
 
@@ -162,7 +197,7 @@ here whenever a non-obvious choice gets made, or gets questioned and kept.
   `toISOString()` converts to UTC and showed the previous day in timezones
   ahead of UTC. **Known limit, deliberately not handled:** because the value
   is a local-midnight timestamp, moving the data between timezones (travel,
-  or syncing the `Question Data` folder across machines) can shift a due
+  or syncing a desk folder across machines) can shift a due
   date by a day. Storing a plain `YYYY-MM-DD` string instead would fix that
   (with a one-off migration of existing timestamps); it wasn't done because
   cross-timezone use isn't expected for now.
@@ -231,7 +266,7 @@ here whenever a non-obvious choice gets made, or gets questioned and kept.
   your actual content while keeping your views/topics/statuses set up
   around it (the one thing the button did that a full reset can't), so it
   wasn't pulling its weight against the risk of a misclick once real data
-  is in the app. Quitting and deleting the `Question Data` folder (see
+  is in the app. Quitting and deleting a desk's folder (see
   "Running it" in the README) does the same job — and more safely, since
   it requires a deliberate action outside the app and typically goes
   through the OS Trash/Recycle Bin first, rather than a hard delete inside

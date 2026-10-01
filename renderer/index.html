@@ -82,14 +82,68 @@
   .ask-box input { flex: 1; border: none; background: transparent; font-family: var(--font-body); font-size: 14px; color: var(--ink); padding: 0; }
   .ask-box input:focus { outline: none; }
   .ask-box input::placeholder { color: var(--ink-faint); }
-  .header-spacer { flex: 1; }
-  .main-nav { display: flex; align-items: center; gap: 20px; font-size: 13.5px; color: var(--ink-soft); flex-shrink: 0; }
+  .header-spacer { flex: 0 0 0; }
+  .main-nav { margin-left: auto; display: flex; align-items: center; gap: 20px; font-size: 13.5px; color: var(--ink-soft); flex-shrink: 0; }
   .main-nav button { font-family: var(--font-body); font-size: 13.5px; color: inherit; background: none; border: none; padding: 0; cursor: pointer; }
   .main-nav button.active { color: var(--ink); font-weight: 600; }
   .main-nav button.ask-crumb { color: var(--ink); font-weight: 600; cursor: default; }
   #themeSelect { font-family: var(--font-body); font-size: 11.5px; padding: 4px 6px; border-radius: 5px; border: 1px solid var(--rule-strong); background: transparent; color: var(--ink-soft); flex-shrink: 0; }
 
   main { flex: 1; overflow-y: auto; }
+
+  /* ---------------- Desks: top-bar switcher, picker, empty desk, toast (6a-6c) ---------------- */
+  .brand-group { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+  .brand-dot { color: var(--ink-faint); }
+  .desk-switcher { position: relative; }
+  .desk-btn { font-family: var(--font-body); font-size: 14px; font-weight: 500; color: var(--ink); background: transparent; border: 1px solid var(--rule-strong); border-radius: 7px; padding: 6px 12px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; max-width: 260px; }
+  .desk-btn .desk-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .desk-btn .desk-caret { font-size: 10px; flex-shrink: 0; }
+  .desk-btn[aria-expanded="true"] { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+  .desk-menu { position: absolute; top: calc(100% + 8px); left: -17px; width: 420px; max-width: calc(100vw - 32px); background: var(--paper-raised); border: 1px solid var(--rule-strong); border-radius: 10px; box-shadow: 0 18px 40px rgba(36,38,31,.18); z-index: 40; overflow: hidden; }
+  .desk-menu[hidden] { display: none; }
+  .desk-menu-label { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-soft); padding: 14px 16px 8px; }
+  .desk-row { display: block; width: 100%; text-align: left; font-family: var(--font-body); background: transparent; border: none; border-top: 1px solid var(--row-divider); border-left: 3px solid transparent; padding: 13px 16px 13px 13px; cursor: pointer; color: var(--ink); position: relative; }
+  button.desk-row:hover { background: var(--paper); }
+  .desk-row.current { background: var(--teal-soft); border-left-color: var(--teal); cursor: default; }
+  .desk-row-name { font-size: 15px; font-weight: 600; padding-right: 24px; }
+  .desk-row-path { font-family: var(--font-mono); font-size: 12px; color: var(--ink-soft); margin-top: 2px; overflow-wrap: anywhere; }
+  .desk-row-check { position: absolute; right: 16px; top: 13px; color: var(--teal); font-weight: 700; }
+  .desk-input { display: block; width: 100%; font-family: var(--font-body); font-size: 15px; font-weight: 600; color: var(--ink); background: var(--paper-raised); border: 1.5px solid var(--teal); border-radius: 8px; padding: 9px 12px; }
+  .desk-input:focus { outline: none; }
+  .desk-hint { font-size: 13px; color: var(--ink-soft); margin-top: 8px; }
+  .desk-hint.error { color: var(--rust-text); }
+  .desk-menu-footer { border-top: 1px solid var(--rule); }
+  .desk-action { display: block; width: 100%; text-align: left; font-family: var(--font-body); font-size: 15px; color: var(--ink); background: transparent; border: none; padding: 12px 16px; cursor: pointer; }
+  .desk-action:hover { background: var(--paper); }
+  .desk-new-form { padding: 12px 16px 14px; }
+  body.picker-mode .desk-switcher, body.picker-mode .brand-dot, body.picker-mode .ask-box, body.picker-mode .main-nav, body.picker-mode #themeSelect { display: none; }
+
+  .picker { max-width: 560px; margin: 0 auto; padding: 96px 16px 60px; }
+  .picker h1 { font-size: 30px; font-weight: 600; letter-spacing: -0.02em; margin: 0 0 12px; line-height: 1.15; }
+  .picker h1 + .picker-new { margin-top: 24px; }
+  .picker-lead { font-size: 16px; line-height: 1.5; color: var(--body-copy); margin: 0 0 28px; }
+  .picker-list { background: var(--paper-raised); border: 1px solid var(--rule); border-radius: 10px; margin-bottom: 36px; overflow: hidden; }
+  .picker-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; width: 100%; text-align: left; font-family: var(--font-body); background: transparent; border: none; border-top: 1px solid var(--row-divider); padding: 16px 20px; cursor: pointer; color: var(--ink); }
+  .picker-row:first-child { border-top: none; }
+  .picker-row:hover { background: var(--paper); }
+  .picker-row-name { font-size: 17px; font-weight: 600; }
+  .picker-row-path { font-family: var(--font-mono); font-size: 12px; color: var(--ink-soft); margin-top: 3px; overflow-wrap: anywhere; }
+  .picker-row-open { font-size: 14px; font-weight: 600; color: var(--teal); white-space: nowrap; }
+  .picker h2 { font-size: 15px; font-weight: 600; margin: 0 0 12px; }
+  .picker-new { display: flex; gap: 12px; }
+  .picker-new input { flex: 1; min-width: 0; font-family: var(--font-body); font-size: 15px; color: var(--ink); background: var(--paper-raised); border: 1px solid var(--rule-strong); border-radius: 8px; padding: 10px 14px; }
+  .picker-new input:focus { outline: none; border: 1.5px solid var(--ink); padding: 9.5px 13.5px; }
+  .picker-new input::placeholder { color: var(--ink-faint); }
+  .picker-error { font-size: 13px; color: var(--rust-text); margin-top: 10px; min-height: 18px; }
+
+  .empty-desk { max-width: 560px; margin: 0 auto; padding: 120px 16px 60px; }
+  .empty-desk .eyebrow { color: var(--teal); margin-bottom: 14px; overflow-wrap: anywhere; }
+  .empty-desk h1 { font-size: 40px; font-weight: 600; letter-spacing: -0.03em; line-height: 1.1; margin: 0 0 14px; }
+  .empty-desk p { font-size: 18px; line-height: 1.5; color: var(--body-copy); margin: 0 0 24px; }
+  .empty-desk-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+
+  .toast { position: fixed; left: 50%; bottom: 32px; transform: translateX(-50%) translateY(8px); background: var(--ink); color: var(--paper); font-size: 14px; padding: 12px 20px; border-radius: 8px; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 80; max-width: calc(100vw - 32px); }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   .screen-empty { color: var(--ink-faint); font-size: 13px; padding: 60px 40px; text-align: center; }
 
   /* ---------------- Eyebrows / small type ---------------- */
@@ -398,7 +452,14 @@
 <body>
 
 <header>
-  <div class="brand">Question</div>
+  <div class="brand-group">
+    <div class="brand">Question</div>
+    <span class="brand-dot" aria-hidden="true">&middot;</span>
+    <div class="desk-switcher" id="deskSwitcher">
+      <button class="desk-btn" id="deskBtn" type="button" aria-haspopup="true" aria-expanded="false"><span class="desk-name" id="deskName"></span><span class="desk-caret" id="deskCaret">&#9662;</span></button>
+      <div class="desk-menu" id="deskMenu" hidden></div>
+    </div>
+  </div>
   <div class="ask-box" id="askBox">
     <span class="ask-dot"></span>
     <input type="text" id="askInput" placeholder="Ask what customers want, or what's worth doing…" autocomplete="off">
@@ -413,6 +474,8 @@
 </header>
 
 <main id="main"></main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <div class="overlay" id="draftOverlay">
   <div class="modal">
@@ -451,13 +514,213 @@
 (async function(){
   "use strict";
 
+  // =====================================================================
+  //  Desks (6a-6c): several separate sets of data, switched from the top bar
+  // =====================================================================
+  // A desk is a folder of the app's plain files under Documents/Question. The
+  // main process owns the folders (src/desks.cjs); this is only the UI. All
+  // the wording lives in DESK_COPY so the word "desk" is easy to change.
+  // Switching reloads the page: the chat feed, saved-view state and every
+  // pending dialog reset exactly as they do on a restart, and nothing is kept
+  // per desk.
+  const DESK_COPY = {
+    menuLabel: "Desks",
+    newItem: "New desk…",
+    renameItem: "Rename desk…",
+    renameHint: "Enter to save · Esc to cancel · also renames the folder",
+    newHint: "Enter to create · Esc to cancel",
+    newPlaceholder: "Name the new desk",
+    pickerTitle: "Which desk?",
+    pickerFirstTitle: "Name your first desk",
+    pickerMissing: name => `We couldn't find <b>${escapeHtml(name)}</b>, the desk you had open last. It may have been renamed or deleted.`,
+    pickerNewHeading: "Or start a new desk",
+    pickerPlaceholder: "Name it, e.g. Home renovation",
+    pickerCreate: "Create",
+    pickerOpen: "Open →",
+    switched: name => `Switched to ${name}`,
+    emptyLabel: name => `${name} · new desk`,
+  };
+
+  const deskUI = { name: null, path: null, menuOpen: false, mode: "list", list: [], checkToken: 0 };
+  let appReady = false;
+  let reloading = false;
+  function reloadApp(){ if (reloading) return; reloading = true; window.location.reload(); }
+
+  let toastTimer = null;
+  function showToast(msg){
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove("show"), 2500);
+  }
+
+  function setDeskButton(){
+    document.getElementById("deskName").textContent = deskUI.name;
+    document.getElementById("deskBtn").title = deskUI.path || "";
+  }
+
+  function closeDeskMenu(){
+    deskUI.menuOpen = false; deskUI.mode = "list";
+    document.getElementById("deskMenu").hidden = true;
+    document.getElementById("deskBtn").setAttribute("aria-expanded", "false");
+    document.getElementById("deskCaret").innerHTML = "&#9662;";
+  }
+
+  // The list is read fresh every time the menu opens, so a desk folder
+  // deleted or added by hand is reflected straight away.
+  async function openDeskMenu(){
+    const res = await window.questionAPI.deskList();
+    deskUI.list = res.desks; deskUI.mode = "list"; deskUI.menuOpen = true;
+    renderDeskMenu();
+  }
+
+  function renderDeskMenu(){
+    const menu = document.getElementById("deskMenu");
+    const others = deskUI.list.filter(d => d.name !== deskUI.name);
+    const renaming = deskUI.mode === "rename", creating = deskUI.mode === "new";
+    const current = renaming
+      ? `<div class="desk-row current"><input class="desk-input" id="deskInput" value="${escapeHtml(deskUI.name)}" maxlength="100" spellcheck="false" autocomplete="off" aria-label="${DESK_COPY.renameItem}"><div class="desk-hint" id="deskHint">${DESK_COPY.renameHint}</div></div>`
+      : `<div class="desk-row current" aria-current="true"><div class="desk-row-name">${escapeHtml(deskUI.name)}</div><div class="desk-row-path">${escapeHtml(deskUI.path || "")}</div><span class="desk-row-check" aria-hidden="true">&#10003;</span></div>`;
+    const rows = others.map(d => `<button type="button" class="desk-row" data-desk="${escapeHtml(d.name)}"><div class="desk-row-name">${escapeHtml(d.name)}</div><div class="desk-row-path">${escapeHtml(d.path)}</div></button>`).join("");
+    const newPart = creating
+      ? `<div class="desk-new-form"><input class="desk-input" id="deskInput" placeholder="${DESK_COPY.newPlaceholder}" maxlength="100" spellcheck="false" autocomplete="off" aria-label="${DESK_COPY.newItem}"><div class="desk-hint" id="deskHint">${DESK_COPY.newHint}</div></div>`
+      : `<button type="button" class="desk-action" data-act="new">${DESK_COPY.newItem}</button>`;
+    menu.innerHTML = `<div class="desk-menu-label">${DESK_COPY.menuLabel}</div>${current}${rows}<div class="desk-menu-footer">${newPart}<button type="button" class="desk-action" data-act="rename">${DESK_COPY.renameItem}</button></div>`;
+    menu.hidden = false;
+    document.getElementById("deskBtn").setAttribute("aria-expanded", "true");
+    document.getElementById("deskCaret").innerHTML = "&#9650;";
+
+    menu.querySelectorAll("[data-desk]").forEach(b => { b.onclick = () => switchDesk(b.getAttribute("data-desk")); });
+    menu.querySelector('[data-act="rename"]').onclick = () => { deskUI.mode = "rename"; renderDeskMenu(); const i = document.getElementById("deskInput"); i.focus(); i.select(); };
+    const newBtn = menu.querySelector('[data-act="new"]');
+    if (newBtn) newBtn.onclick = () => { deskUI.mode = "new"; renderDeskMenu(); document.getElementById("deskInput").focus(); };
+    const input = document.getElementById("deskInput");
+    if (input){
+      input.addEventListener("input", () => validateDeskInput());
+      input.addEventListener("keydown", e => { if (e.key === "Enter"){ e.preventDefault(); commitDeskInput(); } });
+    }
+  }
+
+  function setDeskHint(reason){
+    const hint = document.getElementById("deskHint");
+    if (!hint) return;
+    if (reason){ hint.textContent = reason; hint.classList.add("error"); }
+    else { hint.textContent = deskUI.mode === "rename" ? DESK_COPY.renameHint : DESK_COPY.newHint; hint.classList.remove("error"); }
+  }
+
+  // Live check as the person types, showing the reason under the input. The
+  // main process is the authority (it sees the real folders); the token just
+  // drops answers that arrive out of order.
+  async function validateDeskInput(){
+    const input = document.getElementById("deskInput");
+    if (!input) return;
+    const token = ++deskUI.checkToken;
+    const val = input.value;
+    if (!val.trim() || (deskUI.mode === "rename" && val.trim() === deskUI.name)){ setDeskHint(null); return; }
+    const res = await window.questionAPI.deskValidate(val, deskUI.mode === "rename" ? deskUI.name : null);
+    if (token !== deskUI.checkToken) return;
+    setDeskHint(res.ok ? null : res.reason);
+  }
+
+  async function commitDeskInput(){
+    const input = document.getElementById("deskInput");
+    if (!input) return;
+    const val = input.value;
+    if (deskUI.mode === "rename"){
+      if (val.trim() === deskUI.name){ deskUI.mode = "list"; renderDeskMenu(); return; }
+      const res = await window.questionAPI.deskRename(val);
+      if (!res.ok){
+        if (res.reason === "missing"){ reloadApp(); return; } // the folder is gone: fall back to the picker
+        setDeskHint(res.reason); return;
+      }
+      deskUI.name = res.name; deskUI.path = res.path; deskUI.mode = "list";
+      deskUI.list = (await window.questionAPI.deskList()).desks;
+      setDeskButton(); renderDeskMenu();
+      if (appReady) render(); // the empty-desk screen shows the name
+    } else if (deskUI.mode === "new"){
+      const res = await window.questionAPI.deskCreate(val);
+      if (!res.ok){ setDeskHint(res.reason); return; }
+      reloadApp();
+    }
+  }
+
+  // Whether the target still exists or not, the page reloads: it lands on the
+  // new desk, or on the picker if that folder has gone.
+  async function switchDesk(name){
+    closeDeskMenu();
+    await window.questionAPI.deskOpen(name);
+    reloadApp();
+  }
+
+  // Esc backs out one step at a time: cancel a rename or new-desk entry first,
+  // then close the menu. Returns true when it used the keypress.
+  function handleDeskEscape(){
+    if (!deskUI.menuOpen) return false;
+    if (deskUI.mode !== "list"){ deskUI.mode = "list"; renderDeskMenu(); document.getElementById("deskBtn").focus(); }
+    else { closeDeskMenu(); document.getElementById("deskBtn").focus(); }
+    return true;
+  }
+
+  document.getElementById("deskBtn").addEventListener("click", () => { if (deskUI.menuOpen) closeDeskMenu(); else openDeskMenu(); });
+  // Clicking anywhere outside closes the menu (and drops an unsaved rename).
+  document.addEventListener("mousedown", e => {
+    if (deskUI.menuOpen && !document.getElementById("deskSwitcher").contains(e.target)) closeDeskMenu();
+  });
+
+  // The picker: first launch, or the last desk's folder is gone.
+  function renderPicker(st){
+    const hasList = st.desks.length > 0;
+    const title = st.firstLaunch ? DESK_COPY.pickerFirstTitle : DESK_COPY.pickerTitle;
+    const rows = st.desks.map(d => `<button type="button" class="picker-row" data-desk="${escapeHtml(d.name)}"><div><div class="picker-row-name">${escapeHtml(d.name)}</div><div class="picker-row-path">${escapeHtml(d.path)}</div></div><span class="picker-row-open">${DESK_COPY.pickerOpen}</span></button>`).join("");
+    document.getElementById("main").innerHTML = `<div class="picker">
+      <h1>${title}</h1>
+      ${st.missingDesk ? `<p class="picker-lead">${DESK_COPY.pickerMissing(st.missingDesk)}</p>` : ""}
+      ${hasList ? `<div class="picker-list">${rows}</div><h2>${DESK_COPY.pickerNewHeading}</h2>` : ""}
+      <div class="picker-new"><input type="text" id="pickerInput" placeholder="${DESK_COPY.pickerPlaceholder}" maxlength="100" spellcheck="false" autocomplete="off" aria-label="${DESK_COPY.pickerNewHeading}"><button type="button" class="btn-teal" id="pickerCreate">${DESK_COPY.pickerCreate}</button></div>
+      <div class="picker-error" id="pickerError"></div>
+    </div>`;
+    const input = document.getElementById("pickerInput");
+    const errEl = document.getElementById("pickerError");
+    let token = 0;
+    input.addEventListener("input", async () => {
+      const t = ++token;
+      if (!input.value.trim()){ errEl.textContent = ""; return; }
+      const res = await window.questionAPI.deskValidate(input.value, null);
+      if (t === token) errEl.textContent = res.ok ? "" : res.reason;
+    });
+    const create = async () => {
+      const res = await window.questionAPI.deskCreate(input.value);
+      if (!res.ok){ errEl.textContent = res.reason; input.focus(); return; }
+      reloadApp();
+    };
+    document.getElementById("pickerCreate").onclick = create;
+    input.addEventListener("keydown", e => { if (e.key === "Enter"){ e.preventDefault(); create(); } });
+    document.querySelectorAll(".picker-row").forEach(b => {
+      b.onclick = async () => { await window.questionAPI.deskOpen(b.getAttribute("data-desk")); reloadApp(); };
+    });
+    if (!hasList) input.focus();
+  }
+
+  const deskStatus = await window.questionAPI.deskStatus();
+  if (deskStatus.mode === "picker"){
+    document.body.classList.add("picker-mode");
+    renderPicker(deskStatus);
+    return; // nothing else to load until a desk is chosen
+  }
+  deskUI.name = deskStatus.activeDesk; deskUI.path = deskStatus.activePath;
+  setDeskButton();
+  if (deskStatus.switchedTo) showToast(DESK_COPY.switched(deskStatus.switchedTo));
+
   // Persistence goes through the real backend (markdown+frontmatter files
   // plus a disposable SQLite index — see src/backend.cjs), reached only via
   // the two calls preload.cjs exposes on window.questionAPI. The chat/answer
   // history (state.feed) stays in-memory only, same documented limitation
   // as before (resets on app restart) — everything else round-trips to disk.
   async function loadState(){
-    const { requests, questions, settings, everSeeded } = await window.questionAPI.loadAll();
+    const loaded = await window.questionAPI.loadAll();
+    if (loaded.noDesk){ reloadApp(); await new Promise(() => {}); } // desk vanished: the reload lands on the picker
+    const { requests, questions, settings, everSeeded } = loaded;
     if (requests.length === 0 && questions.length === 0 && !settings){
       return everSeeded ? blankState() : null;
     }
@@ -477,6 +740,11 @@
     window.questionAPI.syncAll({
       requests: state.requests, questions: state.questions,
       settings: { views: state.views, requestsControls: state.requestsControls, scoreWeights: state.scoreWeights, theme: state.theme, customerAliases: state.customerAliases },
+    }).then(res => {
+      // The open desk's folder was deleted or renamed by hand. Nothing was
+      // written (the folder is never recreated behind the person's back), so
+      // fall back to the picker, which says what happened.
+      if (res && res.ok === false) reloadApp();
     }).catch(err => console.error("Failed to save:", err));
   }
 
@@ -1026,7 +1294,11 @@
       } else if (e.key === "Backspace" && input.value === "" && chips.length){
         chips.pop(); paintChips(); hideCustDropdown(); notify();
       } else if (e.key === "Escape"){
+        // Only swallow Esc when it actually closed the dropdown, so a second
+        // press can close the dialog behind it.
+        const wasOpen = custDropdownEl && custDropdownEl.style.display !== "none";
         hideCustDropdown();
+        if (wasOpen) e.preventDefault();
       }
     });
     input.addEventListener("blur", () => {
@@ -1369,6 +1641,19 @@
     return bits.filter(Boolean).join(", ");
   }
   function renderNowScreen(){
+    // A desk with nothing in it yet (6c). Once anything has been logged, even
+    // if nothing is open, the "Nothing open right now." state below applies.
+    if (state.requests.length === 0 && state.questions.length === 0){
+      return `<div class="empty-desk">
+        <div class="eyebrow">${escapeHtml(DESK_COPY.emptyLabel(deskUI.name))}</div>
+        <h1>Nothing here yet.</h1>
+        <p>Ask a question or add a request, and Now will start telling you what to work on.</p>
+        <div class="empty-desk-actions">
+          <button class="btn-teal" id="emptyAddRequest">Add a request</button>
+          <button class="btn-secondary" id="emptyAsk">Ask a question</button>
+        </div>
+      </div>`;
+    }
     const open = state.requests.filter(r => !isShipped(r)).sort((a,b) => scoreOf(b) - scoreOf(a));
     if (open.length === 0){
       const clusters = clusterUnmatchedQuestions();
@@ -2398,10 +2683,25 @@
     render();
   };
 
+  // Clicking outside a dialog, or pressing Esc, closes it.
+  function dismissOverlay(ov){
+    closeOverlay(ov.id);
+    if (ov.id === "detailOverlay"){ document.getElementById("detailModal").classList.remove("req-modal"); render(); }
+  }
   document.querySelectorAll(".overlay").forEach(ov => {
     let downOnBackdrop = false;
     ov.addEventListener("mousedown", e => { downOnBackdrop = (e.target === ov); });
-    ov.addEventListener("click", e => { if (e.target === ov && downOnBackdrop){ closeOverlay(ov.id); if (ov.id === "detailOverlay"){ document.getElementById("detailModal").classList.remove("req-modal"); render(); } } downOnBackdrop = false; });
+    ov.addEventListener("click", e => { if (e.target === ov && downOnBackdrop) dismissOverlay(ov); downOnBackdrop = false; });
+  });
+  // Esc closes the desk menu first (one step at a time), otherwise the open
+  // dialog. Controls with their own Esc behaviour (the customer dropdown, the
+  // edit-customer dialog) call preventDefault, which stops this from also
+  // closing the dialog around them.
+  document.addEventListener("keydown", e => {
+    if (e.key !== "Escape" || e.defaultPrevented) return;
+    if (handleDeskEscape()){ e.preventDefault(); return; }
+    const open = Array.from(document.querySelectorAll(".overlay.open")).pop();
+    if (open){ e.preventDefault(); dismissOverlay(open); }
   });
   document.querySelectorAll("[data-close]").forEach(el => { el.onclick = () => closeOverlay(el.getAttribute("data-close")); });
   function openOverlay(id){ document.getElementById(id).classList.add("open"); }
@@ -2510,8 +2810,10 @@
     if (shipSel) shipSel.onchange = () => { state.requestsControls.shippedFilter = shipSel.value; saveState(); render(); };
     const clearFilter = mainEl.querySelector("[data-clear-filter]");
     if (clearFilter) clearFilter.onclick = () => { state.requestsControls.filter = null; saveState(); render(); };
-    const newReqBtn = mainEl.querySelector("#newRequestBtn");
+    const newReqBtn = mainEl.querySelector("#newRequestBtn") || mainEl.querySelector("#emptyAddRequest");
     if (newReqBtn) newReqBtn.onclick = () => { pendingDraftFeedItem = null; pendingDraftClusterQuestionIds = null; openDraftFromText(""); };
+    const emptyAsk = mainEl.querySelector("#emptyAsk");
+    if (emptyAsk) emptyAsk.onclick = () => document.getElementById("askInput").focus();
     const viewsBtn = mainEl.querySelector("#viewsMenuBtn");
     const viewsList = mainEl.querySelector("#viewsMenuList");
     if (viewsBtn) viewsBtn.onclick = (e) => { e.stopPropagation(); viewsList.classList.toggle("open"); };
@@ -2564,6 +2866,7 @@
   themeSelect.onchange = () => { state.theme = themeSelect.value; saveState(); applyTheme(); };
 
   render();
+  appReady = true;
 })();
 </script>
 </body>

@@ -56,7 +56,7 @@
   <!-- preload / contextBridge -->
   <rect class="box" x="50" y="310" width="1100" height="110" rx="10"/>
   <text x="75" y="340" class="h">contextBridge — preload.cjs</text>
-  <text x="75" y="365" class="b-mono">exposeInMainWorld("questionAPI", &#123; loadAll, syncAll &#125;)</text>
+  <text x="75" y="365" class="b-mono">exposeInMainWorld("questionAPI", &#123; loadAll, syncAll, desk… &#125;)</text>
   <text x="75" y="390" class="note">The only two calls that ever cross from renderer to main — everything else stays out of the page's reach.</text>
 
   <!-- Arrow preload -> main -->
@@ -67,9 +67,9 @@
   <rect class="box-accent" x="50" y="470" width="1100" height="190" rx="10"/>
   <text x="75" y="500" class="h">Main process — main.cjs</text>
   <text x="75" y="527" class="b">&#8226; Creates the <tspan class="b-mono">BrowserWindow</tspan> and enforces the Content-Security-Policy header</text>
-  <text x="75" y="547" class="b">&#8226; <tspan class="b-mono">ipcMain.handle("question:loadAll" / "question:syncAll")</tspan></text>
-  <text x="75" y="567" class="b">&#8226; Resolves <tspan class="b-mono">DATA_DIR</tspan> — <tspan class="tag">Documents/Question Data</tspan>, or the <tspan class="b-mono">QUESTION_DATA_DIR</tspan> env override</text>
-  <text x="75" y="587" class="b">&#8226; Resolves <tspan class="b-mono">SEEDED_MARKER</tspan> — inside Electron's own per-user app-support directory</text>
+  <text x="75" y="547" class="b">&#8226; <tspan class="b-mono">ipcMain.handle("question:*" / "desks:*")</tspan></text>
+  <text x="75" y="567" class="b">&#8226; Tracks the open desk under <tspan class="tag">Documents/Question</tspan> (or the <tspan class="b-mono">QUESTION_DESKS_DIR</tspan> override)</text>
+  <text x="75" y="587" class="b">&#8226; Keeps <tspan class="b-mono">SEEDED_MARKER</tspan> and the last-desk file in Electron's per-user app-support directory</text>
   <text x="75" y="615" class="tag">Full Node.js access lives only here — never in the renderer.</text>
 
   <!-- Arrow main -> backend -->
@@ -93,7 +93,7 @@
 
   <!-- Disk: visible data folder -->
   <rect class="box" x="50" y="950" width="480" height="270" rx="10"/>
-  <text x="75" y="982" class="h">Documents/Question Data/</text>
+  <text x="75" y="982" class="h">Documents/Question/&lt;desk&gt;/</text>
   <text x="75" y="1004" class="tag">visible — the real source of truth</text>
   <text x="75" y="1035" class="b-mono">feature-requests/*.md</text>
   <text x="75" y="1058" class="b-mono">questions/*.md</text>
@@ -111,7 +111,7 @@
   <text x="645" y="1035" class="b-mono">seeded.marker</text>
   <text x="645" y="1063" class="b">Holds no user content — one bit only: "has this app ever</text>
   <text x="645" y="1084" class="b">produced its example data before, on this machine?"</text>
-  <text x="645" y="1116" class="b">Lives outside Question Data on purpose, so it survives that</text>
+  <text x="645" y="1116" class="b">Lives outside the desk folders on purpose, so it survives them</text>
   <text x="645" y="1137" class="b">folder being deleted — a reset lands on a genuinely blank</text>
   <text x="645" y="1158" class="b">app, and the example data seeds exactly once, ever.</text>
 
