@@ -30,7 +30,12 @@
     "directories": {
       "output": "release"
     },
-    "mac": { "target": "dmg", "category": "public.app-category.productivity" },
+    "mac": {
+      "target": "dmg",
+      "category": "public.app-category.productivity",
+      "hardenedRuntime": true,
+      "notarize": true
+    },
     "win": { "target": "nsis" },
     "linux": { "target": "AppImage", "category": "Office" },
     "publish": {
