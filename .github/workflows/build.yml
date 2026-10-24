@@ -42,4 +42,23 @@ jobs:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        run: npx electron-builder ${{ matrix.target }} --publish always
+        run: npx electron-builder ${{ matrix.target }} --publish never
+
+      # electron-builder only uploads to a draft release it creates itself, so
+      # it silently skips a release that was published by hand. Upload the
+      # installers ourselves instead, which works whatever state the release is in.
+      - name: Attach installers to the release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          shopt -s nullglob
+          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 \
+            || gh release create "$GITHUB_REF_NAME" --draft --title "$GITHUB_REF_NAME" --generate-notes \
+            || true
+          files=(release/*.dmg release/*.AppImage release/*.blockmap release/latest*.yml)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No installers found in release/" >&2
+            exit 1
+          fi
+          gh release upload "$GITHUB_REF_NAME" "${files[@]}" --clobber
