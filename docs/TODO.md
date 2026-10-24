@@ -54,3 +54,23 @@ _Multiple data sets are done: see "Desks" in docs/DESIGN.md._
   Left out of the customer-name work on purpose: parsing plus the shared
   resolver already keeps the spelling consistent, and the picker adds UI to
   the most-used screen. Revisit if people count asks under the wrong customer.
+
+- **Uninstalling (README section, after the next build is tested)** — dragging
+  the app to the Bin leaves everything else behind, and macOS gives an app no
+  hook to clean up after itself, so this is documentation, not code. Add an
+  "Uninstalling" section to the README saying:
+  - Your data lives in `Documents/Question`. Keep it if you might come back;
+    delete it by hand if you want it gone. The app never removes it for you,
+    on purpose.
+  - The app also keeps a tiny settings folder (just the last-opened desk
+    name) under `~/Library/Application Support`, and Electron may leave small
+    cache and preference files in `~/Library/Caches` and `~/Library/Preferences`.
+    None hold user data and deleting them is optional. On Linux the
+    equivalent is under `~/.config`.
+
+  Blocked on the real folder names: they haven't been checked on a Mac. After
+  the next build, install it, run it once, and note exactly which
+  "question"/"Question" folders and files appear in those locations, then use
+  those names in the README rather than guessing. (My guess is that the
+  Application Support folder is `question-app`, since that's the `name` in
+  `package.json`, but it hasn't been confirmed.)
