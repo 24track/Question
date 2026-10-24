@@ -1,6 +1,6 @@
 {
   "name": "question-app",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "A lightweight product management tool for tracking questions and feature requests.",
   "private": true,
   "main": "main.cjs",
