@@ -100,7 +100,7 @@ that turns out to be deliberate.
 
 ## How it's built
 
-![Architecture diagram: renderer process talks to the main process through the calls preload.cjs exposes (loadAll/syncAll for the open desk's data, plus a few desk calls); the main process works out which desk is open, and hands that folder and a separate seeded-data marker to backend.cjs, which reads and writes the Markdown+frontmatter files, settings.json and the disposable SQLite index under Documents/Question/<desk>, plus the tiny marker and last-desk files kept in Electron's own app-support directory.](docs/architecture.svg)
+![Architecture diagram: renderer process talks to the main process through the calls preload.cjs exposes (loadAll/syncAll for the open desk's data, plus a few desk calls); the main process works out which desk is open, and hands that folder to backend.cjs, which reads and writes the Markdown+frontmatter files, settings.json and the disposable SQLite index under Documents/Question/<desk>; the main process itself keeps the tiny last-desk file in Electron's own app-support directory.](docs/architecture.svg)
 
 - **Renderer**: a single-file HTML/CSS/JS UI (`renderer/index.html`), no
   framework, no build step.

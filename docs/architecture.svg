@@ -69,12 +69,12 @@
   <text x="75" y="527" class="b">&#8226; Creates the <tspan class="b-mono">BrowserWindow</tspan> and enforces the Content-Security-Policy header</text>
   <text x="75" y="547" class="b">&#8226; <tspan class="b-mono">ipcMain.handle("question:*" / "desks:*")</tspan></text>
   <text x="75" y="567" class="b">&#8226; Tracks the open desk under <tspan class="tag">Documents/Question</tspan> (or the <tspan class="b-mono">QUESTION_DESKS_DIR</tspan> override)</text>
-  <text x="75" y="587" class="b">&#8226; Keeps <tspan class="b-mono">SEEDED_MARKER</tspan> and the last-desk file in Electron's per-user app-support directory</text>
+  <text x="75" y="587" class="b">&#8226; Keeps the last-desk file (<tspan class="b-mono">desks.json</tspan>) in Electron's per-user app-support directory</text>
   <text x="75" y="615" class="tag">Full Node.js access lives only here — never in the renderer.</text>
 
   <!-- Arrow main -> backend -->
   <line x1="600" y1="660" x2="600" y2="705" class="arrow"/>
-  <text x="615" y="688" class="arrow-label">backend.loadAll(dataDir, markerFile) / backend.syncAll(dataDir, ...)</text>
+  <text x="615" y="688" class="arrow-label">backend.loadAll(dataDir) / backend.syncAll(dataDir, ...)</text>
 
   <!-- backend.cjs -->
   <rect class="box" x="50" y="710" width="1100" height="190" rx="10"/>
@@ -82,14 +82,11 @@
   <text x="75" y="767" class="b">&#8226; Reads/writes each request and question as a Markdown file with YAML frontmatter</text>
   <text x="75" y="787" class="b">&#8226; Rebuilds the SQLite index from those files on every save (never hand-edited, never assumed to exist)</text>
   <text x="75" y="807" class="b">&#8226; Reads/writes <tspan class="b-mono">settings.json</tspan> (views, requestsControls, score weights, theme)</text>
-  <text x="75" y="827" class="b">&#8226; Checks / writes the seeded-marker file (<tspan class="b-mono">hasEverLaunched</tspan> / <tspan class="b-mono">markLaunched</tspan>)</text>
-  <text x="75" y="855" class="tag">Zero dependencies — a hand-rolled frontmatter reader/writer and Node's built-in node:sqlite.</text>
+  <text x="75" y="835" class="tag">Zero dependencies — a hand-rolled frontmatter reader/writer and Node's built-in node:sqlite.</text>
 
   <!-- Arrows down to disk -->
   <line x1="320" y1="900" x2="320" y2="945" class="arrow"/>
-  <line x1="880" y1="900" x2="880" y2="945" class="arrow"/>
   <text x="335" y="928" class="arrow-label">reads / writes</text>
-  <text x="750" y="928" class="arrow-label">checks / writes once</text>
 
   <!-- Disk: visible data folder -->
   <rect class="box" x="50" y="950" width="480" height="270" rx="10"/>
@@ -104,16 +101,16 @@
   <text x="75" y="1180" class="b">Human-readable, yours to back up, sync, or edit directly.</text>
   <text x="75" y="1201" class="note">Deleting this whole folder is the app's only reset — see docs/DESIGN.md.</text>
 
-  <!-- Disk: hidden app-support marker -->
+  <!-- Disk: hidden app-support setting -->
   <rect class="box-marker" x="620" y="950" width="530" height="270" rx="10"/>
   <text x="645" y="982" class="h">App-support (Electron userData)</text>
   <text x="645" y="1004" class="tag">hidden — the one deliberate exception</text>
-  <text x="645" y="1035" class="b-mono">seeded.marker</text>
-  <text x="645" y="1063" class="b">Holds no user content — one bit only: "has this app ever</text>
-  <text x="645" y="1084" class="b">produced its example data before, on this machine?"</text>
-  <text x="645" y="1116" class="b">Lives outside the desk folders on purpose, so it survives them</text>
-  <text x="645" y="1137" class="b">folder being deleted — a reset lands on a genuinely blank</text>
-  <text x="645" y="1158" class="b">app, and the example data seeds exactly once, ever.</text>
+  <text x="645" y="1035" class="b-mono">desks.json</text>
+  <text x="645" y="1063" class="b">Holds no user content — just the name of the desk that was</text>
+  <text x="645" y="1084" class="b">open last, so the app can reopen it. Written by main.cjs.</text>
+  <text x="645" y="1116" class="b">Lives outside the desk folders on purpose, so renaming or</text>
+  <text x="645" y="1137" class="b">deleting a desk's folder never takes the setting with it. If</text>
+  <text x="645" y="1158" class="b">that folder is gone, the app shows the "Which desk?" picker.</text>
 
   <text x="50" y="1370" class="subtitle">Full rationale for these choices: docs/DESIGN.md</text>
 </svg>
