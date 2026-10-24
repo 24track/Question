@@ -69,21 +69,18 @@ here whenever a non-obvious choice gets made, or gets questioned and kept.
   is a known, accepted limitation, not a bug: everything else (requests,
   questions, settings, view layout, feed panel height) round-trips to disk;
   the feed transcript itself deliberately doesn't.
-- **Example data only ever seeds on the true first run — ever, on this
-  machine — not just "no data currently on disk."** Those aren't the same
-  test: deleting a desk's data folder to reset the app (see the "Clear all
-  data" entry below) also deletes `settings.json`, which used to be the only
-  first-run signal, so it used to make the app look exactly like a fresh
-  install and reseed the examples again. It now also checks a tiny marker
-  file, `seeded.marker`, written on first launch — deliberately kept
-  *outside* the desk folders, in Electron's own per-user app-support
-  directory (see `main.cjs`'s `SEEDED_MARKER`), specifically so it survives
-  the visible data folder being deleted. With desks, only the first desk ever
-  opened on a machine gets the examples; later new desks start empty. This is
-  the one deliberate exception to "nothing hidden in app-support" above: unlike everything
-  else, this file holds no user content at all, just one bit ("has this
-  app ever produced its example data before") — a reset should give you a
-  truly blank app, not the demo content again.
+- **No example data: every desk starts empty.** The app used to seed a
+  handful of example requests and questions on the very first run (guarded by
+  a `seeded.marker` file in Electron's app-support directory so a reset
+  wouldn't bring them back). That was dropped: a new user's first desk
+  showing someone else's made-up requests doesn't make sense, and the empty
+  Now screen already says what to do next. The marker and the seed data are
+  gone from the code; a stray `seeded.marker` left in app-support by an
+  earlier version is harmless and never read. The example set lives on as a
+  development tool, `node tools/sample-desk.cjs [outDir]`, which writes it out
+  as a real desk (dates relative to now) for trying screens and ideas against
+  realistic data; it isn't part of the packaged app. `npm run demo` still seeds
+  its own throwaway sample data for the backend proof.
 
 - **Desks: one folder per separate set of data, switched by pointing the
   app at a different folder.** There's no database to migrate and no
@@ -97,7 +94,7 @@ here whenever a non-obvious choice gets made, or gets questioned and kept.
     there is never listed or counted, and a folder moved in by hand from an
     older version just appears.
   - **The last-opened desk is remembered in `desks.json`, in Electron's
-    app-support directory** (beside `seeded.marker`), not in a desk folder or
+    app-support directory**, not in a desk folder or
     in `Documents/Question`, so renaming or deleting a desk by hand never takes
     the setting with it.
   - **Switching reloads the page.** Chat history, saved-view state and open

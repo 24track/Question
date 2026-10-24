@@ -135,10 +135,8 @@ npm start
 The first time you run it, the app asks you to name your first **desk**. A
 desk is one separate set of your data: a folder inside `Documents/Question`
 (for example `Documents/Question/Strata`) holding plain Markdown files,
-human-readable, nothing hidden away in an app-support folder. The very first
-desk is seeded with a handful of example feature requests and questions so
-there's something to look at right away; every desk you start after that is
-empty.
+human-readable, nothing hidden away in an app-support folder. Every desk
+starts empty.
 
 You can keep as many desks as you like (work, personal, a home project) and
 switch between them from the desk name in the top bar, where you can also
@@ -156,8 +154,7 @@ keep in `Documents/Question` is ignored. A folder of data from an earlier
 version of the app (the old `Documents/Question Data`) works as a desk too:
 move it into `Documents/Question` and rename it however you like.
 
-The example data only ever seeds once — the true first time the app has ever
-run on your machine. Updating the app's code later (a new download, a
+Updating the app's code later (a new download, a
 `git pull`, whatever) never touches your desks — your real data and the
 app's code are entirely separate, so upgrading the app never risks your
 data.
@@ -168,8 +165,7 @@ for this — an always-visible, one-click, unrecoverable wipe sitting in the
 main UI forever was judged too dangerous to keep (see docs/DESIGN.md), and
 deleting a folder by hand takes a deliberate action outside the app. On most
 systems the deleted folder lands in the Trash/Recycle Bin first rather than
-being gone immediately. The example data isn't brought back by a later
-reset — it's a true, one-time first-run affordance.
+being gone immediately.
 
 `npm run demo` runs a small end-to-end proof of the backend on its own
 (seeds sample data, deletes the index, rebuilds it from the Markdown files,

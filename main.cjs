@@ -25,15 +25,11 @@ let lastDeskEver = null;  // last desk name ever saved (null = this machine has 
 let pendingSwitch = null; // name of the desk just switched to, reported once so the page can say so after it reloads
 let DESKS_SETTINGS = null;
 
-// Separate from the desk folders on purpose — see backend.cjs's
-// hasEverLaunched(). Electron's own per-user app-support directory, not the
-// visible Documents folder, is exactly where a marker needs to live to
-// survive the user deleting their data folder to reset the app. The
-// last-opened-desk setting (desks.json) lives next to it for the same
-// reason. app.getPath() isn't safe to call before the app is ready, so both
-// are resolved inside whenReady() below, ahead of window creation and the
-// IPC handlers that read them.
-let SEEDED_MARKER = null;
+// The last-opened-desk setting (desks.json) lives in Electron's own per-user
+// app-support directory, not in a desk folder, so it survives a desk's folder
+// being moved or deleted. app.getPath() isn't safe to call before the app is
+// ready, so it's resolved inside whenReady() below, ahead of window creation
+// and the IPC handlers that read it.
 
 function activeDir() {
   return path.join(DESKS_DIR, activeDesk);
@@ -103,7 +99,6 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
-  SEEDED_MARKER = path.join(app.getPath("userData"), "seeded.marker");
   DESKS_SETTINGS = path.join(app.getPath("userData"), "desks.json");
   startDesks();
   createWindow();
@@ -126,7 +121,7 @@ app.on("window-all-closed", () => {
 // finishes before the switch happens. ----
 ipcMain.handle("question:loadAll", () => {
   if (!ensureActiveDeskPresent()) return { noDesk: true };
-  return backend.loadAll(activeDir(), SEEDED_MARKER);
+  return backend.loadAll(activeDir());
 });
 
 ipcMain.handle("question:syncAll", (event, { requests, questions, settings }) => {
