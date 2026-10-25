@@ -40,6 +40,22 @@ coming up, and know what to work on next.
 The **Now** screen answers one question directly - "what is the most important thing I can be doing now, and why?" - as a single recommendation with the reasoning spelled
 out in plain language.
 
+The **Requests** screen lists everything you're tracking, grouped by quarter,
+urgency, topic or customer.
+
+<p>
+  <img src="docs/screenshots/requests-dark.png" alt="Requests screen, dark theme" width="49%">
+  <img src="docs/screenshots/requests-light.png" alt="Requests screen, light theme" width="49%">
+</p>
+
+Open any request to see why it ranks where it does, who has asked for it, and
+the questions linked to it.
+
+<p>
+  <img src="docs/screenshots/request-dark.png" alt="An open request, dark theme" width="49%">
+  <img src="docs/screenshots/request-light.png" alt="An open request, light theme" width="49%">
+</p>
+
 ## What it does
 
 - **Now** — the single most important request to work on, with the reasons
