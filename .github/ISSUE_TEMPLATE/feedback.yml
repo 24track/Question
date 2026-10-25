@@ -1,0 +1,27 @@
+name: Feedback or idea
+description: Something that confused you, felt clunky, or that you wish the app did
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for trying Question. Issues here are public, so please **don't paste or screenshot your real requests, questions or notes**.
+  - type: textarea
+    id: trying-to-do
+    attributes:
+      label: What were you trying to do?
+      description: The situation you were in matters more than the feature you have in mind.
+    validations:
+      required: true
+  - type: textarea
+    id: what-got-in-the-way
+    attributes:
+      label: What got in the way, or what would have helped?
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Question version
+      description: The version in the name of the file you downloaded, for example 0.1.4.
+      placeholder: "0.1.4"
