@@ -3,6 +3,23 @@
 > [!NOTE]
 > Current status - Beta testing
 
+A lightweight desktop tool to answer a single question -
+
+````
+What is the most important thing I can be doing Now?
+````
+
+Inspired by my background in Software Development, and originally intended as a Product Management tool, I quickly realised this was something that can be used for any taks or project tracking scenario.
+
+* Personal or professional projects
+* Trip planning
+* Career planning
+* Sports group planning
+* Music project planning
+
+and any set of tasks where you need to balance competing demands and know which demand to prioritise first.
+
+
 A lightweight desktop tool for product managers to keep feature requests and
 customer questions in one, low overhead system: track who's asking for what, spot
 duplicate asks before they become duplicate work, see which topics keep
