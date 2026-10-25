@@ -9,31 +9,36 @@ A lightweight desktop tool to answer a single question -
 What is the most important thing I can be doing Now?
 ````
 
-Inspired by my background in Software Development, and originally intended as a Product Management tool, I quickly realised this was something that can be used for any taks or project tracking scenario.
+Inspired by my background in Software Development, and originally intended as a Product Management tool, I quickly realised that **Question** can be used for any task or project tracking scenario.
 
+* Software Development projects
 * Personal or professional projects
 * Trip planning
 * Career planning
 * Sports group planning
 * Music project planning
 
-and any set of tasks where you need to balance competing demands and know which demand to prioritise first.
+and any situation where you need to balance competing demands, and know which demand to prioritise first.
 
+**Question** works by starting with a question - either something you need to answer, or something that you have been asked.
 
+* Ask a question that's never been asked before, and **Question** will ask if you want to raise a new request to answer that question
+* Ask a question that's been raised before, and **Question** will take you to the matching request (or let you raise a new request if the match is wrong)
+
+<!--
 A lightweight desktop tool for product managers to keep feature requests and
 customer questions in one, low overhead system: track who's asking for what, spot
 duplicate asks before they become duplicate work, see which topics keep
 coming up, and know what to work on next.
+-->
 
 <p>
   <img src="docs/screenshots/now-dark.png" alt="Now screen, dark theme" width="49%">
   <img src="docs/screenshots/now-light.png" alt="Now screen, light theme" width="49%">
 </p>
 
-The **Now** screen above answers one question directly — "what should I work
-on next, and why?" — as a single recommendation with the reasoning spelled
-out in plain language, rather than a sortable table you have to interpret
-yourself.
+The **Now** screen answers one question directly - "what is the most important thing I can be doing now, and why?" - as a single recommendation with the reasoning spelled
+out in plain language.
 
 ## What it does
 
