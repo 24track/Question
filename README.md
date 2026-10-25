@@ -1,7 +1,7 @@
 # Question
 
 > [!NOTE]
-> Current status - Beta testing
+> Current status - Beta testing. Mac users: [download the latest release](https://github.com/24track/Question/releases/latest).
 
 A lightweight desktop tool to answer a single question -
 
@@ -149,10 +149,28 @@ that turns out to be deliberate.
 
 ## Running it
 
+### macOS (Apple Silicon)
+
+Download the latest `.dmg` from the
+[Releases page](https://github.com/24track/Question/releases/latest), open it
+and drag **Question** to Applications. The app is signed and notarised by
+Apple, so it opens normally, with no Gatekeeper warnings or workarounds. The
+DMG is Apple Silicon (arm64) only.
+
+### Linux
+
+Download the `.AppImage` from the Releases page, make it executable and run it.
+
+### From source
+
+For Intel Macs, Windows, or if you want to hack on it:
+
 ```
 npm install
 npm start
 ```
+
+### First run
 
 The first time you run it, the app asks you to name your first **desk**. A
 desk is one separate set of your data: a folder inside `Documents/Question`
@@ -176,10 +194,9 @@ keep in `Documents/Question` is ignored. A folder of data from an earlier
 version of the app (the old `Documents/Question Data`) works as a desk too:
 move it into `Documents/Question` and rename it however you like.
 
-Updating the app's code later (a new download, a
-`git pull`, whatever) never touches your desks — your real data and the
-app's code are entirely separate, so upgrading the app never risks your
-data.
+Updating the app later (installing a newer download, or a `git pull` if you
+run from source) never touches your desks — your real data and the app's code
+are entirely separate, so upgrading the app never risks your data.
 
 **To wipe a desk and start clean, quit the app and delete that desk's
 folder, then relaunch** (or just start a new desk). There's no in-app button
@@ -201,11 +218,14 @@ npm run dist
 
 Uses `electron-builder` to produce an installer for whichever platform
 you're running it on, in `release/` (electron-builder doesn't reliably
-cross-build a mac installer from Windows or Linux, or vice versa). Tagged
-pushes to this repo build a `.dmg` (mac) and an AppImage (Linux)
-automatically via GitHub Actions, one platform per runner, and attach them
-to a GitHub Release — see `.github/workflows/build.yml`. There is no
-Windows installer; on Windows, run it from source with `npm start`.
+cross-build a mac installer from Windows or Linux, or vice versa). Run
+locally, the mac build is unsigned. Tagged pushes to this repo build a `.dmg`
+(mac) and an AppImage (Linux) automatically via GitHub Actions, one platform
+per runner, and attach them to a GitHub Release — see
+`.github/workflows/build.yml`. The mac `.dmg` built there is signed and
+notarised, and is Apple Silicon (arm64) only, since it's built on an Apple
+Silicon runner. There is no Windows installer; on Windows, run it from source
+with `npm start`.
 
 ## Status
 
