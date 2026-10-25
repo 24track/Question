@@ -98,8 +98,8 @@ it only finds things that share actual vocabulary with what you typed.
 
 **Won't match:**
 - A question that's conceptually about a topic but doesn't share any words
-  with the requests in it — e.g. three Travel requests titled "Narribri",
-  "Coffs Harbour", "London" won't match "Where do I want to travel to?",
+  with the requests in it — e.g. three Travel requests titled "Lisbon",
+  "Kyoto", "Cusco" won't match "Where do I want to travel to?",
   because none of those titles contain the word "travel" (and topic names
   are deliberately excluded from matching — see below).
 - Paraphrases and synonyms in general — "Is dark theme available?" only
@@ -174,7 +174,7 @@ npm start
 
 The first time you run it, the app asks you to name your first **desk**. A
 desk is one separate set of your data: a folder inside `Documents/Question`
-(for example `Documents/Question/Strata`) holding plain Markdown files,
+(for example `Documents/Question/Work`) holding plain Markdown files,
 human-readable, nothing hidden away in an app-support folder. Every desk
 starts empty.
 
