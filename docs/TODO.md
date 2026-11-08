@@ -11,6 +11,35 @@ _Multiple data sets are done: see "Desks" in docs/DESIGN.md._
   gets wider use. It's a wording change only: behaviour stays the same. (This
   overlaps with the editable-labels item below.)
 
+- **Rename "Desks" to "Projects" (consider, not decided)** — "desk" may not
+  be the right word for a separate set of data. Scoped, it's small:
+  - **Wording only (under an hour):** almost all the UI text is in the
+    `DESK_COPY` block in `renderer/index.html` (about 14 strings: the menu
+    label, "New desk…", "Rename desk…", "Which desk?", "Name your first desk",
+    and so on). Also update the README, `docs/DESIGN.md`, this file and the text
+    in `docs/architecture.svg`. The screenshots only show the open desk's name,
+    so they don't need retaking.
+  - **Internal names (optional, about an hour more):** roughly 470 mentions
+    across 9 files: `src/desks.cjs`, the `desks:*` IPC channels, the `deskXxx`
+    functions in `preload.cjs`, the `.desk-*` CSS classes, and
+    `tools/sample-desk.cjs`. Users never see these, so this can wait. The risk
+    is a typo breaking IPC, so run the switcher, picker, new and rename flows
+    afterwards.
+  - **Existing installs:** user data is unaffected. A desk is just a folder
+    under `Documents/Question/`, recognised by its record subfolders, and
+    nothing in the files says "desk", so no migration is needed. The one
+    catch is `desks.json` (key `lastDesk`) in Electron's app-support folder:
+    if it's renamed, existing installs lose their last-opened desk and see the
+    picker once after updating. Either keep `desks.json` / `lastDesk` as
+    internal names (preferred), or rename them and fall back to reading the
+    old file. `QUESTION_DESKS_DIR` (dev/testing only) can be kept, or renamed
+    with the old name still accepted.
+  - **Open question:** "project" often means a Jira-style container in PM
+    tools, which is a looser fit for what is really a separate data set. Worth
+    a second look at the word before committing to it.
+  - Overlaps with the "Terminology (later)" item above: if "Request" and
+    "Customer" are renamed for wider use, do the desk wording in the same pass.
+
 - **Editable labels for other use cases (display-only)** — let a user rename
   the priority-score weight labels, "Shipped" (e.g. "Done") and "Requests"
   (e.g. "Things to do") so Question works as a general note-taking /
